@@ -42,8 +42,8 @@ function LandingPage() {
       <Header userMenu={<HeaderMenu />} />
       <main className="min-h-svh">
         <section className="mx-auto w-full max-w-2xl px-4 pt-16 pb-12 text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-balance sm:text-5xl">
-            Say it in a few words.
+          <h1 className="text-4xl font-bold tracking-tight text-balance text-green-600 sm:text-5xl">
+            Tento text je ted zelenej.
           </h1>
           <p className="mx-auto mt-4 max-w-md text-lg text-pretty text-muted-foreground">
             Quacker is a tiny social network for short messages. Post a quack, read what everyone
