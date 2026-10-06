@@ -24,6 +24,24 @@ describe("QuackList", () => {
     expect(screen.getByText("@CaffeinatedDuck")).toBeInTheDocument()
   })
 
+  it("invites the first post when the feed is empty", () => {
+    render(<QuackList quacks={[]} />)
+
+    expect(screen.getByText("No quacks yet. Post the first one.")).toBeInTheDocument()
+  })
+
+  it("names the search term when a search finds nothing", () => {
+    render(
+      <QuackList
+        quacks={[]}
+        searchTerm=" duck "
+      />,
+    )
+
+    expect(screen.getByText('No quacks match "duck".')).toBeInTheDocument()
+    expect(screen.queryByText("No quacks yet. Post the first one.")).not.toBeInTheDocument()
+  })
+
   it("shows an error with a working reload button", async () => {
     const onReload = vi.fn()
     render(
