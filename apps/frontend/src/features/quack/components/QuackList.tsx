@@ -11,9 +11,13 @@ type QuackListProps = {
   isLoading?: boolean
   error?: Error
   onReload?: () => void
+  // The active search, if any — `quacks` is expected to be filtered already.
+  searchTerm?: string
 }
 
-export function QuackList({ quacks, isLoading, error, onReload }: QuackListProps) {
+export function QuackList({ quacks, isLoading, error, onReload, searchTerm = "" }: QuackListProps) {
+  const trimmedSearchTerm = searchTerm.trim()
+
   return (
     <div className="flex flex-col">
       {isLoading && quacks.length === 0 ? (
@@ -46,7 +50,9 @@ export function QuackList({ quacks, isLoading, error, onReload }: QuackListProps
 
       {!isLoading && !error && quacks.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">
-          No quacks yet. Post the first one.
+          {trimmedSearchTerm !== ""
+            ? `No quacks match "${trimmedSearchTerm}".`
+            : "No quacks yet. Post the first one."}
         </p>
       ) : null}
 

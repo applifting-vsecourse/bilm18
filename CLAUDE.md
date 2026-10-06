@@ -26,6 +26,14 @@ Need a control that isn't in `src/components/ui/`? Add it with `pnpm dlx shadcn@
 
 The CLI puts `shadow-xs`/`shadow-sm` on inputs, textareas and cards. [`DESIGN.md`](DESIGN.md) keeps shadows for things that genuinely float — dialogs, dropdowns, toasts. Strip them.
 
+### Logic lives in `lib/`, state lives in the route
+
+Non-trivial logic (filtering, sorting, formatting) goes in `features/<name>/lib/` as a pure function with its own unit test next to it. Feature components stay controlled (`value` + `onChange`). Page-level UI state (`useState`) lives in the route file — e.g. `routes/_ProtectedPages/quacks.tsx` holds `searchTerm` and passes `filterQuacks(...)` to the list.
+
+### Test fixtures mirror the seed
+
+Test fixtures reuse names and texts from `apps/backend/src/scripts/seed/seed/seed-database.ts`, so examples written against seed data in user stories can be asserted directly.
+
 ### The app is already running
 
 Assume the dev servers are up. If something is listening on the app's ports, that is this application: use it. Don't start a second instance, don't restart it, don't run `pnpm dev`.
