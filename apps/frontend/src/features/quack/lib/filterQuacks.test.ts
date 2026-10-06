@@ -16,10 +16,26 @@ const quack = (id: string, user: Quack["user"], text: string): Quack => ({
 })
 
 // A slice of the seed data, newest first like the feed.
-const multigrain = quack("q4", breadCritic, "Multigrain. Seeds still attached. Genuinely nutritious.")
-const espresso = quack("q3", caffeinatedDuck, "third espresso and i can hear colours now\none of them is quacking")
-const pond = quack("q2", deepDuckThoughts, "If a pond reflects the sky, is the sky just a very large and very shy pond?")
-const sourdough = quack("q1", breadCritic, "Sourdough. Thrown by a child. Landed two metres short of anyone.")
+const multigrain = quack(
+  "q4",
+  breadCritic,
+  "Multigrain. Seeds still attached. Genuinely nutritious.",
+)
+const espresso = quack(
+  "q3",
+  caffeinatedDuck,
+  "third espresso and i can hear colours now\none of them is quacking",
+)
+const pond = quack(
+  "q2",
+  deepDuckThoughts,
+  "If a pond reflects the sky, is the sky just a very large and very shy pond?",
+)
+const sourdough = quack(
+  "q1",
+  breadCritic,
+  "Sourdough. Thrown by a child. Landed two metres short of anyone.",
+)
 const feed = [multigrain, espresso, pond, sourdough]
 
 describe("filterQuacks", () => {
