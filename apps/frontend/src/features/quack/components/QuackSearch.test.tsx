@@ -12,6 +12,7 @@ const quacks: Quack[] = [
   {
     id: "q2",
     text: "third espresso and i can hear colours now",
+    mood: null,
     userId: "u1",
     createdAt: new Date("2026-01-02T12:00:00Z"),
     user: { id: "u1", name: "Caffeinated Duck", username: "CaffeinatedDuck" },
@@ -19,6 +20,7 @@ const quacks: Quack[] = [
   {
     id: "q1",
     text: "Sourdough. Thrown by a child.",
+    mood: null,
     userId: "u2",
     createdAt: new Date("2026-01-01T12:00:00Z"),
     user: { id: "u2", name: "The Bread Critic", username: "BreadCritic" },
