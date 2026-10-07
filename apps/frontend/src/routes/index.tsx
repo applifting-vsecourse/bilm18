@@ -19,6 +19,7 @@ export const Route = createFileRoute("/")({
 const SAMPLE_QUACKS: Quack[] = [
   {
     id: "sample-1",
+    mood: null,
     text: "me: throws one crumb into the pond\nducks: assemble like the Avengers\ni fear i may have started something",
     userId: "sample-user-1",
     createdAt: new Date("2026-09-22T09:12:00"),
@@ -26,6 +27,7 @@ const SAMPLE_QUACKS: Quack[] = [
   },
   {
     id: "sample-2",
+    mood: null,
     text: "If ducks wore pants, would they wear them on their legs or over their whole lower half like a cape?\nAsking for a friend. A feathery friend.",
     userId: "sample-user-2",
     createdAt: new Date("2026-09-22T08:40:00"),

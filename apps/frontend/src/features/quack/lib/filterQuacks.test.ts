@@ -10,6 +10,7 @@ const deepDuckThoughts = { id: "u3", name: "Deep Duck Thoughts", username: "Deep
 const quack = (id: string, user: Quack["user"], text: string): Quack => ({
   id,
   text,
+  mood: null,
   userId: user.id,
   createdAt: new Date("2026-01-01T12:00:00Z"),
   user,
