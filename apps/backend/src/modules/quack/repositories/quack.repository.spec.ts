@@ -2,6 +2,7 @@
 // The database rules (one vote per person, option from the same poll) are
 // constraints in the migration.
 import { PrismaService } from '@/core/prisma/prisma.service';
+import { Prisma } from '@/generated/prisma/client';
 import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
 import { QuackRepository } from './quack.repository';
 
@@ -107,5 +108,45 @@ describe('QuackRepository.getQuacks', () => {
         }) as unknown,
       }),
     );
+  });
+});
+
+describe('QuackRepository.saveVote', () => {
+  const vote = { quackId: 'q1', optionId: 'o2', userId: 'u4' };
+
+  it('upserts on the one-vote-per-person key', async () => {
+    const { prisma, repository } = setup([]);
+
+    await repository.saveVote(vote);
+
+    expect(prisma.pollVote.upsert).toHaveBeenCalledWith({
+      where: { quackId_userId: { quackId: 'q1', userId: 'u4' } },
+      create: vote,
+      update: { optionId: 'o2' },
+    });
+  });
+
+  it('retries once when a concurrent first vote won the insert', async () => {
+    const { prisma, repository } = setup([]);
+    prisma.pollVote.upsert
+      .mockRejectedValueOnce(
+        new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+          code: 'P2002',
+          clientVersion: 'test',
+        }),
+      )
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .mockResolvedValueOnce({} as any);
+
+    await expect(repository.saveVote(vote)).resolves.toBeUndefined();
+    expect(prisma.pollVote.upsert).toHaveBeenCalledTimes(2);
+  });
+
+  it('passes other database errors on', async () => {
+    const { prisma, repository } = setup([]);
+    prisma.pollVote.upsert.mockRejectedValueOnce(new Error('connection lost'));
+
+    await expect(repository.saveVote(vote)).rejects.toThrow('connection lost');
+    expect(prisma.pollVote.upsert).toHaveBeenCalledTimes(1);
   });
 });

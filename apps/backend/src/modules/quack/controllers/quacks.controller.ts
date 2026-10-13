@@ -8,7 +8,9 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
+  Put,
   UseGuards,
   UsePipes,
   ValidationPipe,
@@ -20,7 +22,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CreateQuackDto } from './dto/create-quack.dto';
-import { QuackResponseDto } from './dto/quack.response.dto';
+import { QuackPollDto, QuackResponseDto } from './dto/quack.response.dto';
+import { VoteDto } from './dto/vote.dto';
 
 @ApiTags('quacks')
 @Controller('quacks')
@@ -59,5 +62,22 @@ export class QuacksController {
       mood: body.mood,
     });
     return QuackResponseDto.fromDomain(quack);
+  }
+
+  @Put(':quackId/vote')
+  @ApiOperation({
+    summary: 'Vote in a poll, or move your vote to another option',
+  })
+  @ApiResponse({ status: 200, type: QuackPollDto })
+  @ApiResponse({ status: 400, description: 'Option is not part of this poll' })
+  @ApiResponse({ status: 401, description: 'Not signed in' })
+  @ApiResponse({ status: 404, description: 'Quack not found or has no poll' })
+  async vote(
+    @User() user: Identity,
+    @Param('quackId') quackId: string,
+    @Body() body: VoteDto,
+  ): Promise<QuackPollDto> {
+    const poll = await this.quacksService.vote(user, quackId, body.optionId);
+    return QuackPollDto.fromDomain(poll);
   }
 }

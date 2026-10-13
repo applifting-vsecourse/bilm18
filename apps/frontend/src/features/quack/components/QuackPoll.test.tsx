@@ -1,5 +1,6 @@
-import { render, screen, within } from "@testing-library/react"
-import { describe, expect, it } from "vitest"
+import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
+import { describe, expect, it, vi } from "vitest"
 
 import type { QuackPoll as QuackPollData } from "@/features/quack/api/quackSchemas"
 import { QuackPoll } from "@/features/quack/components/QuackPoll"
@@ -16,7 +17,6 @@ const lunchPoll = (overrides: Partial<QuackPollData> = {}): QuackPollData => ({
   ...overrides,
 })
 
-const option = (text: string) => screen.getByText(text).closest("li") as HTMLElement
 
 describe("QuackPoll", () => {
   it("shows every option with its votes and share, in order", () => {
@@ -72,13 +72,61 @@ describe("QuackPoll", () => {
   it("marks my vote and only my vote", () => {
     render(<QuackPoll poll={lunchPoll({ myVoteOptionId: "o2" })} />)
 
-    expect(within(option("Sushi")).getByText("(your vote)")).toBeInTheDocument()
-    expect(screen.getAllByText("(your vote)")).toHaveLength(1)
+    expect(screen.getByRole("button", { pressed: true })).toHaveTextContent("Sushi")
+    expect(screen.getAllByRole("button", { pressed: false })).toHaveLength(2)
   })
 
   it("marks nothing before I vote", () => {
     render(<QuackPoll poll={lunchPoll()} />)
 
-    expect(screen.queryByText("(your vote)")).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { pressed: true })).not.toBeInTheDocument()
+  })
+
+  it("votes for the option I click", async () => {
+    const onVote = vi.fn()
+    render(
+      <QuackPoll
+        poll={lunchPoll()}
+        onVote={onVote}
+      />,
+    )
+
+    await userEvent.click(screen.getByRole("button", { name: /Canteen/ }))
+
+    expect(onVote).toHaveBeenCalledWith("o3")
+  })
+
+  it("moves my vote when I click another option", async () => {
+    const onVote = vi.fn()
+    render(
+      <QuackPoll
+        poll={lunchPoll({ myVoteOptionId: "o2" })}
+        onVote={onVote}
+      />,
+    )
+
+    await userEvent.click(screen.getByRole("button", { name: /Pizza/ }))
+
+    expect(onVote).toHaveBeenCalledWith("o1")
+  })
+
+  it("does nothing when I click my own vote again", async () => {
+    const onVote = vi.fn()
+    render(
+      <QuackPoll
+        poll={lunchPoll({ myVoteOptionId: "o2" })}
+        onVote={onVote}
+      />,
+    )
+
+    await userEvent.click(screen.getByRole("button", { name: /Sushi/ }))
+
+    expect(onVote).not.toHaveBeenCalled()
+  })
+
+  it("is read-only without onVote", () => {
+    render(<QuackPoll poll={lunchPoll()} />)
+
+    for (const button of screen.getAllByRole("button")) expect(button).toBeDisabled()
   })
 })

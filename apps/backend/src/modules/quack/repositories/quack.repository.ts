@@ -95,4 +95,46 @@ export class QuackRepository {
     });
     return mapPrismaQuackToDomain(quack);
   }
+
+  // null when the quack doesn't exist or has no poll.
+  async getPoll(quackId: string, viewerId: string): Promise<QuackPoll | null> {
+    const quack = await this.prisma.quack.findUnique({
+      where: { id: quackId },
+      include: quackInclude(viewerId),
+    });
+    return quack ? mapPrismaPollToDomain(quack) : null;
+  }
+
+  // First vote and a changed vote are the same write. Keyed on the
+  // (quackId, userId) unique index, so concurrent requests can't add a
+  // second vote.
+  async saveVote(vote: {
+    quackId: string;
+    optionId: string;
+    userId: string;
+  }): Promise<void> {
+    const upsert = (): Promise<unknown> =>
+      this.prisma.pollVote.upsert({
+        where: {
+          quackId_userId: { quackId: vote.quackId, userId: vote.userId },
+        },
+        create: vote,
+        update: { optionId: vote.optionId },
+      });
+
+    try {
+      await upsert();
+    } catch (error) {
+      // Two first votes raced and the other one inserted first — now it's
+      // an update.
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        await upsert();
+        return;
+      }
+      throw error;
+    }
+  }
 }

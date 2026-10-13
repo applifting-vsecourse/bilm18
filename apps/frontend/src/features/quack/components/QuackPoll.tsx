@@ -1,13 +1,19 @@
 import { Check } from "lucide-react"
 
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 import type { QuackPoll as QuackPollData } from "@/features/quack/api/quackSchemas"
 import { pollPercentages } from "@/features/quack/lib/pollPercentages"
 
-type QuackPollProps = { poll: QuackPollData; className?: string }
+type QuackPollProps = {
+  poll: QuackPollData
+  // Without it the poll is read-only.
+  onVote?: (optionId: string) => void
+  className?: string
+}
 
-export function QuackPoll({ poll, className }: QuackPollProps) {
+export function QuackPoll({ poll, onVote, className }: QuackPollProps) {
   const percentages = pollPercentages(poll)
 
   return (
@@ -18,33 +24,38 @@ export function QuackPoll({ poll, className }: QuackPollProps) {
           const percentage = percentages[index]
 
           return (
-            <li
-              key={option.id}
-              className="relative overflow-hidden rounded-md border border-border text-sm"
-            >
-              {/* The bar's width is data, so it can't come from the spacing scale. */}
-              <div
-                aria-hidden
-                className="absolute inset-y-0 left-0 bg-muted"
-                style={{ width: `${percentage}%` }}
-              />
-              <div className="relative flex items-center justify-between gap-3 px-3 py-2">
-                <span className={cn("flex items-center gap-2", isMine && "font-medium")}>
+            <li key={option.id}>
+              <Button
+                type="button"
+                variant="outline"
+                aria-pressed={isMine}
+                disabled={!onVote}
+                // Clicking your own vote again does nothing — a vote can be
+                // moved, not taken back.
+                onClick={() => {
+                  if (!isMine) onVote?.(option.id)
+                }}
+                className="relative h-auto w-full justify-between overflow-hidden px-3 py-2 font-normal"
+              >
+                {/* The bar's width is data, so it can't come from the spacing scale. */}
+                <span
+                  aria-hidden
+                  className="absolute inset-y-0 left-0 bg-muted"
+                  style={{ width: `${percentage}%` }}
+                />
+                <span className={cn("relative flex items-center gap-2", isMine && "font-medium")}>
                   {option.text}
                   {isMine ? (
-                    <>
-                      <Check
-                        aria-hidden
-                        className="size-4"
-                      />
-                      <span className="sr-only">(your vote)</span>
-                    </>
+                    <Check
+                      aria-hidden
+                      className="size-4"
+                    />
                   ) : null}
                 </span>
-                <span className="text-muted-foreground tabular-nums">
+                <span className="relative text-muted-foreground tabular-nums">
                   {option.votes} · {percentage}%
                 </span>
-              </div>
+              </Button>
             </li>
           )
         })}

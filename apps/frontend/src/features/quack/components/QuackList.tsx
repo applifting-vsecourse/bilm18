@@ -13,9 +13,17 @@ type QuackListProps = {
   onReload?: () => void
   // The active search, if any — `quacks` is expected to be filtered already.
   searchTerm?: string
+  onVote?: (quackId: string, optionId: string) => void
 }
 
-export function QuackList({ quacks, isLoading, error, onReload, searchTerm = "" }: QuackListProps) {
+export function QuackList({
+  quacks,
+  isLoading,
+  error,
+  onReload,
+  searchTerm = "",
+  onVote,
+}: QuackListProps) {
   const trimmedSearchTerm = searchTerm.trim()
 
   return (
@@ -60,6 +68,7 @@ export function QuackList({ quacks, isLoading, error, onReload, searchTerm = "" 
         <QuackItem
           key={quack.id}
           quack={quack}
+          onVote={onVote ? (optionId) => onVote(quack.id, optionId) : undefined}
         />
       ))}
     </div>

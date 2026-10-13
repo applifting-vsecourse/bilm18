@@ -148,10 +148,10 @@ prisma.pollVote.upsert({
 - `lib/pollPercentages.ts`, `lib/applyVote.ts` — čisté funkce s testy (viz story).
 - `components/QuackPoll.tsx` v `QuackItem`, controlled: `poll` + `onVote(optionId)`.
 - `api/voteInPoll.ts` + `hooks/useVote.ts`:
-  - `scope: { id: \`vote-${quackId}\` }` — TanStack Query v5 pak mutace téže ankety **řadí za sebe**. Rychlé klikání Pizza → Sushi → Pizza nedoběhne na serveru v jiném pořadí a poslední klik vyhraje.
-  - `onMutate`: `cancelQueries(quackKeys.lists())`, snapshot, `setQueryData` s `applyVote`.
-  - `onError`: vrátit snapshot + `toast.error("Your vote didn't go through. Try again.")`.
-  - `onSettled`: `invalidateQueries(quackKeys.all())`.
+  - `scope: { id: "quack-vote" }` — TanStack Query v5 pak hlasy **řadí za sebe**. Rychlé klikání Pizza → Sushi → Pizza nedoběhne na serveru v jiném pořadí a poslední klik vyhraje. (Jedna fronta pro všechny ankety: `scope` je statický na hooku a hook je v route jeden. Hlasy jsou vzácné a rychlé, takže to nevadí.)
+  - `onMutate` běží hned při kliknutí (ve frontě čeká až request): `cancelQueries(quackKeys.lists())`, snapshot, `setQueryData` s `applyVote`.
+  - `onError`: `toast.error("Your vote didn't go through. Try again.")` a vrátit snapshot — **jen pokud je to poslední rozpracovaný hlas**, jinak by rollback smazal novější kliknutí.
+  - `onSettled`: `invalidateQueries(quackKeys.all())` — taky jen u posledního rozpracovaného hlasu, ze stejného důvodu.
 - `QuackForm.tsx`: „Add poll“ → `useFieldArray` s možnostmi, zod pravidla stejná jako DTO.
 
 ## 4. Pořadí stavby — vertikální řezy
