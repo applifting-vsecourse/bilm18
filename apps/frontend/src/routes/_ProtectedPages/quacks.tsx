@@ -4,6 +4,7 @@ import { createFileRoute } from "@tanstack/react-router"
 
 import { Seo } from "@/components/Seo"
 
+import { profileQueryOptions } from "@/features/profile/api/profileQueryOptions"
 import { quacksQueryOptions } from "@/features/quack/api/quacksQueryOptions"
 import { QuackForm } from "@/features/quack/components/QuackForm"
 import { QuackList } from "@/features/quack/components/QuackList"
@@ -16,6 +17,8 @@ export const Route = createFileRoute("/_ProtectedPages/quacks")({
 
 function QuacksPage() {
   const quacksQuery = useQuery(quacksQueryOptions())
+  // Only for the default mood: until it loads (or if it fails) the form starts without one.
+  const profileQuery = useQuery(profileQueryOptions())
   // Page state only: the search is gone after a refresh or navigating away.
   const [searchTerm, setSearchTerm] = useState("")
 
@@ -25,7 +28,10 @@ function QuacksPage() {
       <section className="mx-auto w-full max-w-2xl px-4 py-8">
         <h1 className="mb-4 text-2xl font-semibold tracking-tight">Quacks</h1>
 
-        <QuackForm className="mb-4" />
+        <QuackForm
+          defaultMood={profileQuery.data?.defaultMood ?? undefined}
+          className="mb-4"
+        />
 
         <QuackSearch
           value={searchTerm}
