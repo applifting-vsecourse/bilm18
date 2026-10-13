@@ -39,3 +39,12 @@ Test fixtures reuse names and texts from `apps/backend/src/scripts/seed/seed/see
 Assume the dev servers are up. If something is listening on the app's ports, that is this application: use it. Don't start a second instance, don't restart it, don't run `pnpm dev`.
 
 Don't reach for the browser to check your own work. Tests and type-checks are the evidence; open the running app when asked to, not on your own initiative.
+
+### Commands must also run on Windows
+
+The team develops on Windows (pnpm runs scripts through `cmd`, git has `core.autocrlf=true`); CI runs on Linux. Two traps make `pnpm check-all` fail locally even though CI is green:
+
+- **Quote globs with escaped double quotes, never single quotes** — in `package.json` scripts and in tool config that runs a command (e.g. `lintCommand` in `vite.config.ts`). `cmd` passes single quotes through literally, so `eslint './src/**/*.ts'` matches no files and fails. Write `eslint \"./src/**/*.ts\"` in `package.json`, `'eslint "./src/**/*.ts"'` in a JS/TS config.
+- **`format:check` flags CRLF line endings** that `autocrlf` puts into the working copy. A file Prettier flags that `git diff` shows as unchanged is not a regression; a file you changed must pass.
+
+When a check fails, say whether it is one of these or a real failure — don't report `check-all` as green or red without that distinction.
