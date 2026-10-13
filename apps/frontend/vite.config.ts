@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => {
         typescript: true,
         eslint: {
           useFlatConfig: true,
-          lintCommand: "eslint './src/**/*.{ts,tsx,js,cjs,mjs}'",
+          lintCommand: 'eslint "./src/**/*.{ts,tsx,js,cjs,mjs}"',
         },
         overlay: { initialIsOpen: false },
       }),

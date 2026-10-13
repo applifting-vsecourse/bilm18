@@ -16,6 +16,7 @@ const quacks: Quack[] = [
     userId: "u1",
     createdAt: new Date("2026-01-02T12:00:00Z"),
     user: { id: "u1", name: "Caffeinated Duck", username: "CaffeinatedDuck" },
+    poll: null,
   },
   {
     id: "q1",
@@ -24,6 +25,7 @@ const quacks: Quack[] = [
     userId: "u2",
     createdAt: new Date("2026-01-01T12:00:00Z"),
     user: { id: "u2", name: "The Bread Critic", username: "BreadCritic" },
+    poll: null,
   },
 ]
 

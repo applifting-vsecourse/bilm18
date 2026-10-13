@@ -9,6 +9,7 @@ import { quacksQueryOptions } from "@/features/quack/api/quacksQueryOptions"
 import { QuackForm } from "@/features/quack/components/QuackForm"
 import { QuackList } from "@/features/quack/components/QuackList"
 import { QuackSearch } from "@/features/quack/components/QuackSearch"
+import { useVote } from "@/features/quack/hooks/useVote"
 import { filterQuacks } from "@/features/quack/lib/filterQuacks"
 
 export const Route = createFileRoute("/_ProtectedPages/quacks")({
@@ -21,6 +22,7 @@ function QuacksPage() {
   const profileQuery = useQuery(profileQueryOptions())
   // Page state only: the search is gone after a refresh or navigating away.
   const [searchTerm, setSearchTerm] = useState("")
+  const vote = useVote()
 
   return (
     <>
@@ -48,6 +50,7 @@ function QuacksPage() {
           // Only the error state offers a retry — posting invalidates the list,
           // and refocusing the tab refetches it.
           onReload={() => void quacksQuery.refetch()}
+          onVote={(quackId, optionId) => vote.mutate({ quackId, optionId })}
         />
       </section>
     </>
