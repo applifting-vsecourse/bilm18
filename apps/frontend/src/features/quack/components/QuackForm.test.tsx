@@ -50,6 +50,40 @@ describe("QuackForm", () => {
     expect(mutate).toHaveBeenCalledWith({ text: "quack", mood: undefined }, expect.anything())
   })
 
+  it("starts with the default mood from Settings", async () => {
+    render(<QuackForm defaultMood="silly" />)
+
+    expect(screen.getByRole("radio", { name: "Silly" })).toHaveAttribute("aria-checked", "true")
+
+    await userEvent.type(screen.getByLabelText("New quack"), "third espresso")
+    await submit()
+
+    expect(mutate).toHaveBeenCalledWith(
+      { text: "third espresso", mood: "silly" },
+      expect.anything(),
+    )
+  })
+
+  it("picks up the default mood when it arrives after the form", () => {
+    const { rerender } = render(<QuackForm />)
+    rerender(<QuackForm defaultMood="happy" />)
+
+    expect(screen.getByRole("radio", { name: "Happy" })).toHaveAttribute("aria-checked", "true")
+  })
+
+  it("goes back to the default mood after posting", async () => {
+    mutate.mockImplementation((_input: unknown, options: { onSuccess: () => void }) =>
+      options.onSuccess(),
+    )
+    render(<QuackForm defaultMood="sad" />)
+
+    await userEvent.type(screen.getByLabelText("New quack"), "quack")
+    await userEvent.click(screen.getByRole("radio", { name: "Angry" }))
+    await submit()
+
+    expect(screen.getByRole("radio", { name: "Sad" })).toHaveAttribute("aria-checked", "true")
+  })
+
   it("clears the mood when the chosen one is pressed again", async () => {
     render(<QuackForm />)
 

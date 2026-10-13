@@ -1,4 +1,4 @@
-import { useId } from "react"
+import { useEffect, useId } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2 } from "lucide-react"
 import { useForm, useWatch } from "react-hook-form"
@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { cn } from "@/lib/utils"
 
-import { quackMoods, quackMoodSchema } from "@/features/quack/api/quackSchemas"
+import { quackMoods, quackMoodSchema, type QuackMood } from "@/features/quack/api/quackSchemas"
 import { useAddQuack } from "@/features/quack/hooks/useAddQuack"
 import { quackMoodLabels } from "@/features/quack/lib/moods"
 
@@ -38,21 +38,35 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 
-type QuackFormProps = { className?: string }
+type QuackFormProps = {
+  // The user's default mood from Settings, pre-selected for every new quack.
+  defaultMood?: QuackMood
+  className?: string
+}
 
-export function QuackForm({ className }: QuackFormProps) {
+export function QuackForm({ defaultMood, className }: QuackFormProps) {
   const addQuack = useAddQuack()
   const moodLabelId = useId()
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { text: "", mood: undefined },
+    defaultValues: { text: "", mood: defaultMood },
   })
+
+  // The default can arrive after the form mounts (the profile loads separately)
+  // or change in Settings — follow it unless the user already picked a mood here.
+  useEffect(() => {
+    if (form.getFieldState("mood").isDirty) return
+    form.resetField("mood", { defaultValue: defaultMood })
+  }, [defaultMood, form])
 
   const text = useWatch({ control: form.control, name: "text" })
   const length = text?.length ?? 0
 
   const handleSubmit = (values: FormValues) => {
-    addQuack.mutate({ text: values.text, mood: values.mood }, { onSuccess: () => form.reset() })
+    addQuack.mutate(
+      { text: values.text, mood: values.mood },
+      { onSuccess: () => form.reset({ text: "", mood: defaultMood }) },
+    )
   }
 
   return (

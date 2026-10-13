@@ -110,6 +110,11 @@ model User {
   username        String? @db.VarChar(50)
   displayUsername String? @db.VarChar(50)
 
+  // Profile settings — owned by the profile module, not by BetterAuth.
+  bio             String?    @db.VarChar(160)
+  // Pre-selected in the new-quack form. Null means "no mood".
+  defaultMood     QuackMood?
+
   @@unique([email])
   @@unique([username])
   @@map("user")
