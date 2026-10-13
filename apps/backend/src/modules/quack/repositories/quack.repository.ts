@@ -83,13 +83,22 @@ export class QuackRepository {
   async createQuack(createQuackData: {
     text: string;
     mood?: QuackMood;
+    pollOptions?: string[];
     userId: string;
   }): Promise<Quack> {
+    const { pollOptions } = createQuackData;
+    // One nested write: the quack and its options are created together or
+    // not at all.
     const quack = await this.prisma.quack.create({
       data: {
         text: createQuackData.text,
         mood: createQuackData.mood,
         user: { connect: { id: createQuackData.userId } },
+        pollOptions: pollOptions
+          ? {
+              create: pollOptions.map((text, position) => ({ text, position })),
+            }
+          : undefined,
       },
       include: quackInclude(createQuackData.userId),
     });

@@ -8,6 +8,10 @@ export type QuackAuthor = {
   username: string;
 };
 
+export const POLL_MIN_OPTIONS = 2;
+export const POLL_MAX_OPTIONS = 7;
+export const POLL_OPTION_MAX_LENGTH = 50;
+
 export type QuackPollOption = {
   id: string;
   text: string;

@@ -37,10 +37,12 @@ export function QuackPoll({ poll, onVote, className }: QuackPollProps) {
                 }}
                 className="relative h-auto w-full justify-between overflow-hidden px-3 py-2 font-normal"
               >
-                {/* The bar's width is data, so it can't come from the spacing scale. */}
+                {/* The bar's width is data, so it can't come from the spacing scale.
+                    Tinted from muted-foreground: bg-muted is nearly the button's own
+                    background, especially in dark mode. */}
                 <span
                   aria-hidden
-                  className="absolute inset-y-0 left-0 bg-muted"
+                  className="absolute inset-y-0 left-0 bg-muted-foreground/25"
                   style={{ width: `${percentage}%` }}
                 />
                 <span className={cn("relative flex items-center gap-2", isMine && "font-medium")}>

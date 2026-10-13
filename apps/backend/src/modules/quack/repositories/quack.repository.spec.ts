@@ -150,3 +150,64 @@ describe('QuackRepository.saveVote', () => {
     expect(prisma.pollVote.upsert).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('QuackRepository.createQuack', () => {
+  const created = (): Record<string, unknown> =>
+    aRow({
+      pollOptions: [
+        { id: 'o1', text: 'Pizza', position: 0, _count: { votes: 0 } },
+        { id: 'o2', text: 'Sushi', position: 1, _count: { votes: 0 } },
+      ],
+    });
+
+  it('creates the quack and its options in one write, keeping their order', async () => {
+    const { prisma, repository } = setup([]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    prisma.quack.create.mockResolvedValue(created() as any);
+
+    const quack = await repository.createQuack({
+      text: 'Where do we go for lunch?',
+      pollOptions: ['Pizza', 'Sushi'],
+      userId: 'u1',
+    });
+
+    expect(prisma.quack.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          pollOptions: {
+            create: [
+              { text: 'Pizza', position: 0 },
+              { text: 'Sushi', position: 1 },
+            ],
+          },
+        }) as unknown,
+      }),
+    );
+    expect(quack.poll).toEqual({
+      options: [
+        { id: 'o1', text: 'Pizza', votes: 0 },
+        { id: 'o2', text: 'Sushi', votes: 0 },
+      ],
+      totalVotes: 0,
+      myVoteOptionId: null,
+    });
+  });
+
+  it('creates no options for a plain quack', async () => {
+    const { prisma, repository } = setup([]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    prisma.quack.create.mockResolvedValue(aRow() as any);
+
+    const quack = await repository.createQuack({
+      text: 'third espresso',
+      userId: 'u1',
+    });
+
+    expect(prisma.quack.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ pollOptions: undefined }) as unknown,
+      }),
+    );
+    expect(quack.poll).toBeNull();
+  });
+});

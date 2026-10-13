@@ -186,3 +186,25 @@ describe('QuacksService.vote', () => {
     expect(repository.saveVote).not.toHaveBeenCalled();
   });
 });
+
+describe('QuacksService.createQuack with a poll', () => {
+  it('passes the poll options to the repository in order', async () => {
+    const repository = mock<QuackRepository>();
+    repository.createQuack.mockResolvedValue(
+      aQuack({ text: 'Where do we go for lunch?' }),
+    );
+
+    const service = new QuacksService(repository);
+
+    await service.createQuack({ id: 'u1' } as Identity, {
+      text: 'Where do we go for lunch?',
+      pollOptions: ['Pizza', 'Sushi', 'Canteen'],
+    });
+
+    expect(repository.createQuack).toHaveBeenCalledWith({
+      text: 'Where do we go for lunch?',
+      pollOptions: ['Pizza', 'Sushi', 'Canteen'],
+      userId: 'u1',
+    });
+  });
+});
