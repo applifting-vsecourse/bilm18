@@ -7,8 +7,9 @@ import { Injectable } from '@nestjs/common';
 export class QuacksService {
   constructor(private readonly quackRepository: QuackRepository) {}
 
-  async getQuacks(): Promise<Quack[]> {
-    return this.quackRepository.getQuacks();
+  // The viewer decides which poll vote comes back as "mine".
+  async getQuacks(user: Identity): Promise<Quack[]> {
+    return this.quackRepository.getQuacks(user.id);
   }
 
   async createQuack(

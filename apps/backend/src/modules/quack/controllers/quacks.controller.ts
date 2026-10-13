@@ -40,8 +40,8 @@ export class QuacksController {
   @ApiOperation({ summary: 'List all quacks' })
   @ApiResponse({ status: 200, type: [QuackResponseDto] })
   @ApiResponse({ status: 401, description: 'Not signed in' })
-  async list(): Promise<QuackResponseDto[]> {
-    const quacks = await this.quacksService.getQuacks();
+  async list(@User() user: Identity): Promise<QuackResponseDto[]> {
+    const quacks = await this.quacksService.getQuacks(user);
     return quacks.map(QuackResponseDto.fromDomain);
   }
 

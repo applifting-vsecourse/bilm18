@@ -14,6 +14,7 @@ const aQuack = (overrides: Partial<Quack> = {}): Quack => ({
   createdAt: new Date('2026-01-01T12:00:00Z'),
   updatedAt: new Date('2026-01-01T12:00:00Z'),
   user: { id: 'u1', name: 'Caffeinated Duck', username: 'CaffeinatedDuck' },
+  poll: null,
   ...overrides,
 });
 
@@ -24,9 +25,21 @@ describe('QuacksService', () => {
     repository.getQuacks.mockResolvedValue(quacks);
 
     const service = new QuacksService(repository);
+    const user = { id: 'u1' } as Identity;
 
-    await expect(service.getQuacks()).resolves.toEqual(quacks);
+    await expect(service.getQuacks(user)).resolves.toEqual(quacks);
     expect(repository.getQuacks).toHaveBeenCalledTimes(1);
+  });
+
+  it('loads quacks as seen by the signed-in user', async () => {
+    const repository = mock<QuackRepository>();
+    repository.getQuacks.mockResolvedValue([]);
+
+    const service = new QuacksService(repository);
+
+    await service.getQuacks({ id: 'u2' } as Identity);
+    // the viewer decides which poll vote is "mine"
+    expect(repository.getQuacks).toHaveBeenCalledWith('u2');
   });
 
   it('creates a quack owned by the signed-in user', async () => {

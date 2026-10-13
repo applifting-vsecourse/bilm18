@@ -11,6 +11,7 @@ const quack = (overrides: Partial<Quack> = {}): Quack => ({
   userId: "u1",
   createdAt: new Date("2026-01-01T12:00:00Z"),
   user: { id: "u1", name: "Caffeinated Duck", username: "CaffeinatedDuck" },
+  poll: null,
   ...overrides,
 })
 

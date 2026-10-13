@@ -1,27 +1,67 @@
 import { PrismaService } from '@/core/prisma/prisma.service';
-import {
-  Quack as PrismaQuack,
-  User as PrismaUser,
-} from '@/generated/prisma/client';
-import { Quack, QuackMood } from '@/modules/quack/domain/quack';
+import { Prisma } from '@/generated/prisma/client';
+import { Quack, QuackMood, QuackPoll } from '@/modules/quack/domain/quack';
 import { Injectable } from '@nestjs/common';
 
-const mapPrismaQuackToDomain = (
-  quack: PrismaQuack & { user?: PrismaUser },
-): Quack => ({
+type QuackWithPollInclude = {
+  user: true;
+  pollOptions: {
+    orderBy: { position: 'asc' };
+    include: { _count: { select: { votes: true } } };
+  };
+  pollVotes: { where: { userId: string }; select: { optionId: true } };
+};
+
+// Loads what the feed shows for a quack, as seen by `viewerId`: the author,
+// the poll options with their vote counts, and only the viewer's own vote.
+const quackInclude = (viewerId: string): QuackWithPollInclude => ({
+  user: true,
+  pollOptions: {
+    orderBy: { position: 'asc' },
+    include: { _count: { select: { votes: true } } },
+  },
+  pollVotes: {
+    where: { userId: viewerId },
+    select: { optionId: true },
+  },
+});
+
+type PrismaQuackWithPoll = Prisma.QuackGetPayload<{
+  include: QuackWithPollInclude;
+}>;
+
+const mapPrismaPollToDomain = (
+  quack: PrismaQuackWithPoll,
+): QuackPoll | null => {
+  if (quack.pollOptions.length === 0) return null;
+
+  const options = quack.pollOptions.map((option) => ({
+    id: option.id,
+    text: option.text,
+    votes: option._count.votes,
+  }));
+
+  return {
+    options,
+    totalVotes: options.reduce((sum, option) => sum + option.votes, 0),
+    // At most one row: the database allows one vote per person per poll.
+    myVoteOptionId: quack.pollVotes[0]?.optionId ?? null,
+  };
+};
+
+const mapPrismaQuackToDomain = (quack: PrismaQuackWithPoll): Quack => ({
   id: quack.id,
   text: quack.text,
   mood: quack.mood,
   userId: quack.userId,
   createdAt: quack.createdAt,
   updatedAt: quack.updatedAt,
-  user: quack.user
-    ? {
-        id: quack.user.id,
-        name: quack.user.name,
-        username: quack.user.username ?? '',
-      }
-    : undefined,
+  user: {
+    id: quack.user.id,
+    name: quack.user.name,
+    username: quack.user.username ?? '',
+  },
+  poll: mapPrismaPollToDomain(quack),
 });
 
 /**
@@ -32,9 +72,9 @@ const mapPrismaQuackToDomain = (
 export class QuackRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getQuacks(): Promise<Quack[]> {
+  async getQuacks(viewerId: string): Promise<Quack[]> {
     const quacks = await this.prisma.quack.findMany({
-      include: { user: true },
+      include: quackInclude(viewerId),
       orderBy: { createdAt: 'desc' },
     });
     return quacks.map(mapPrismaQuackToDomain);
@@ -51,7 +91,7 @@ export class QuackRepository {
         mood: createQuackData.mood,
         user: { connect: { id: createQuackData.userId } },
       },
-      include: { user: true },
+      include: quackInclude(createQuackData.userId),
     });
     return mapPrismaQuackToDomain(quack);
   }
