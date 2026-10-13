@@ -46,5 +46,6 @@ The team develops on Windows (pnpm runs scripts through `cmd`, git has `core.aut
 
 - **Quote globs with escaped double quotes, never single quotes** — in `package.json` scripts and in tool config that runs a command (e.g. `lintCommand` in `vite.config.ts`). `cmd` passes single quotes through literally, so `eslint './src/**/*.ts'` matches no files and fails. Write `eslint \"./src/**/*.ts\"` in `package.json`, `'eslint "./src/**/*.ts"'` in a JS/TS config.
 - **`format:check` flags CRLF line endings** that `autocrlf` puts into the working copy. A file Prettier flags that `git diff` shows as unchanged is not a regression; a file you changed must pass.
+- **Check app formatting from the app's directory.** The root `.prettierignore` lists `apps`, so `npx prettier --check apps/frontend/...` from the repo root skips the file and still prints "All matched files use Prettier code style!". To check like CI without the CRLF noise, run in `apps/frontend` (or `apps/backend`): `npx prettier --check --end-of-line auto "./src/**/*.{ts,tsx,css,js,cjs,mjs,json}"`.
 
 When a check fails, say whether it is one of these or a real failure — don't report `check-all` as green or red without that distinction.

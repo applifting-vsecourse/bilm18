@@ -17,7 +17,6 @@ const lunchPoll = (overrides: Partial<QuackPollData> = {}): QuackPollData => ({
   ...overrides,
 })
 
-
 describe("QuackPoll", () => {
   it("shows every option with its votes and share, in order", () => {
     render(<QuackPoll poll={lunchPoll()} />)
