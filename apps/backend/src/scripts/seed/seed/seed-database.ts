@@ -3,6 +3,7 @@ import { User } from '@/generated/prisma/client';
 import { QuackMood } from '@/modules/quack/domain/quack';
 import { BetterAuth } from '@/shared/auth/providers/better-auth.provider';
 import { Config } from '@/shared/config/config.service';
+import { createPollVote } from './create-poll-vote';
 import { createQuack } from './create-quack';
 import { createUser } from './create-user';
 
@@ -92,6 +93,7 @@ export const seedDatabase = async (
     minutesAgo: number;
     text: string;
     mood?: QuackMood;
+    poll?: { options: string[]; votes: { voter: User; option: string }[] };
   }[] = [
     {
       author: pondAdmin,
@@ -165,6 +167,22 @@ ducks: assemble like the Avengers
 i fear i may have started something`,
     },
     {
+      // The author hasn't voted, so signing in as Caffeinated Duck shows the
+      // poll before a first vote.
+      author: caffeinatedDuck,
+      minutesAgo: 45,
+      text: `Where do we go for lunch?`,
+      poll: {
+        options: ['Pizza', 'Sushi', 'Canteen'],
+        votes: [
+          { voter: breadCritic, option: 'Pizza' },
+          { voter: deepDuckThoughts, option: 'Pizza' },
+          { voter: pondAdmin, option: 'Pizza' },
+          { voter: migrationSeason, option: 'Sushi' },
+        ],
+      },
+    },
+    {
       author: pondAdmin,
       minutesAgo: 20,
       text: `The bread situation has been resolved. The swan has been spoken to.
@@ -174,12 +192,21 @@ Please stop tagging me.`,
 
   const now = Date.now();
 
-  for (const { author, minutesAgo, text, mood } of exampleQuacks) {
-    await createQuack(prisma, {
+  for (const { author, minutesAgo, text, mood, poll } of exampleQuacks) {
+    const quack = await createQuack(prisma, {
       text,
       mood,
       userId: author.id,
       createdAt: new Date(now - minutesAgo * MINUTE_IN_MS),
+      pollOptions: poll?.options,
     });
+
+    for (const { voter, option } of poll?.votes ?? []) {
+      await createPollVote(prisma, {
+        quackId: quack.id,
+        optionText: option,
+        userId: voter.id,
+      });
+    }
   }
 };

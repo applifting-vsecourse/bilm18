@@ -41,9 +41,44 @@ model Quack {
   userId    String
   createdAt DateTime   @default(now())
   updatedAt DateTime   @default(now()) @updatedAt
+  // A quack with options is a poll — there is no separate poll table.
+  pollOptions PollOption[]
+  pollVotes   PollVote[]
 
   @@index([userId])
   @@map("quack")
+}
+
+model PollOption {
+  id       String     @id @default(cuid())
+  quack    Quack      @relation(fields: [quackId], references: [id], onDelete: Cascade)
+  quackId  String
+  text     String     @db.VarChar(50)
+  position Int
+  votes    PollVote[]
+
+  @@unique([quackId, position])
+  // Target of PollVote's composite foreign key.
+  @@unique([id, quackId])
+  @@map("poll_option")
+}
+
+model PollVote {
+  id        String     @id @default(cuid())
+  quack     Quack      @relation(fields: [quackId], references: [id], onDelete: Cascade)
+  quackId   String
+  // Composite key: the database rejects a vote for an option from another poll.
+  option    PollOption @relation(fields: [optionId, quackId], references: [id, quackId], onDelete: Cascade)
+  optionId  String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @default(now()) @updatedAt
+
+  // One vote per person per poll, enforced by the database.
+  @@unique([quackId, userId])
+  @@index([optionId])
+  @@map("poll_vote")
 }
 
 model Session {
@@ -105,7 +140,8 @@ model User {
   sessions        Session[]
   accounts        Account[]
   quacks          Quack[]
-  role            UserRole  @default(user)
+  pollVotes       PollVote[]
+  role           UserRole  @default(user)
 
   username        String? @db.VarChar(50)
   displayUsername String? @db.VarChar(50)
