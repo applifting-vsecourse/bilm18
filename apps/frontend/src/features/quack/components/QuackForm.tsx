@@ -1,4 +1,4 @@
-import { useEffect, useId } from "react"
+import { useEffect, useId, type RefObject } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ListChecks, Loader2, Plus, X } from "lucide-react"
 import { useFieldArray, useForm, useWatch } from "react-hook-form"
@@ -68,10 +68,12 @@ type FormValues = z.infer<typeof schema>
 type QuackFormProps = {
   // The user's default mood from Settings, pre-selected for every new quack.
   defaultMood?: QuackMood
+  // Lets the page focus the text field, e.g. from an empty state.
+  textareaRef?: RefObject<HTMLTextAreaElement | null>
   className?: string
 }
 
-export function QuackForm({ defaultMood, className }: QuackFormProps) {
+export function QuackForm({ defaultMood, textareaRef, className }: QuackFormProps) {
   const addQuack = useAddQuack()
   const moodLabelId = useId()
   const form = useForm<FormValues>({
@@ -130,6 +132,11 @@ export function QuackForm({ defaultMood, className }: QuackFormProps) {
                   placeholder="Quack something..."
                   disabled={addQuack.isPending}
                   {...field}
+                  ref={(element) => {
+                    // react-hook-form needs the element too (it focuses invalid fields).
+                    field.ref(element)
+                    if (textareaRef) textareaRef.current = element
+                  }}
                 />
               </FormControl>
               <FormMessage />

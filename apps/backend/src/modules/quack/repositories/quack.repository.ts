@@ -114,6 +114,29 @@ export class QuackRepository {
     return quack ? mapPrismaPollToDomain(quack) : null;
   }
 
+  // null when the quack doesn't exist.
+  async getAuthorId(quackId: string): Promise<string | null> {
+    const quack = await this.prisma.quack.findUnique({
+      where: { id: quackId },
+      select: { userId: true },
+    });
+    return quack?.userId ?? null;
+  }
+
+  // Deletes only if `userId` wrote it — the author check is part of the
+  // write itself, so no other code path can delete someone else's quack.
+  // Poll options and votes go with it (onDelete: Cascade). False when
+  // nothing matched.
+  async deleteQuack(quack: {
+    quackId: string;
+    userId: string;
+  }): Promise<boolean> {
+    const { count } = await this.prisma.quack.deleteMany({
+      where: { id: quack.quackId, userId: quack.userId },
+    });
+    return count > 0;
+  }
+
   // First vote and a changed vote are the same write. Keyed on the
   // (quackId, userId) unique index, so concurrent requests can't add a
   // second vote.

@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react"
-import { describe, expect, it } from "vitest"
+import userEvent from "@testing-library/user-event"
+import { describe, expect, it, vi } from "vitest"
 
 import type { Quack } from "@/features/quack/api/quackSchemas"
 import { QuackItem } from "@/features/quack/components/QuackItem"
@@ -29,5 +30,44 @@ describe("QuackItem", () => {
     expect(screen.queryByText("Mood:")).not.toBeInTheDocument()
     // Only the separator between the handle and the time, as before moods.
     expect(screen.getAllByText("·")).toHaveLength(1)
+  })
+
+  it("has no delete action without onDelete", () => {
+    render(<QuackItem quack={quack()} />)
+
+    expect(screen.queryByRole("button", { name: "Delete quack" })).not.toBeInTheDocument()
+  })
+
+  it("asks before deleting and deletes on confirm", async () => {
+    const onDelete = vi.fn()
+    render(
+      <QuackItem
+        quack={quack()}
+        onDelete={onDelete}
+      />,
+    )
+
+    await userEvent.click(screen.getByRole("button", { name: "Delete quack" }))
+    expect(screen.getByRole("alertdialog", { name: "Delete this quack?" })).toBeInTheDocument()
+    expect(onDelete).not.toHaveBeenCalled()
+
+    await userEvent.click(screen.getByRole("button", { name: "Delete" }))
+    expect(onDelete).toHaveBeenCalledOnce()
+  })
+
+  it("keeps the quack when the user cancels", async () => {
+    const onDelete = vi.fn()
+    render(
+      <QuackItem
+        quack={quack()}
+        onDelete={onDelete}
+      />,
+    )
+
+    await userEvent.click(screen.getByRole("button", { name: "Delete quack" }))
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }))
+
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument()
+    expect(onDelete).not.toHaveBeenCalled()
   })
 })

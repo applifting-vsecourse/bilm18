@@ -60,4 +60,60 @@ describe("QuackList", () => {
     await userEvent.click(screen.getByRole("button", { name: /reload/i }))
     expect(onReload).toHaveBeenCalledOnce()
   })
+
+  it("offers delete on the viewer's own quacks only", async () => {
+    const onDelete = vi.fn()
+    render(
+      <QuackList
+        quacks={[
+          quack({ id: "q-espresso", text: "third espresso" }),
+          quack({
+            id: "q-pond",
+            text: "is the sky just a very large and very shy pond?",
+            userId: "u2",
+            user: { id: "u2", name: "Deep Duck Thoughts", username: "DeepDuckThoughts" },
+          }),
+        ]}
+        currentUserId="u1"
+        onDelete={onDelete}
+      />,
+    )
+
+    // getByRole throws if there is more than one: Deep Duck Thoughts' quack has none.
+    await userEvent.click(screen.getByRole("button", { name: "Delete quack" }))
+    await userEvent.click(screen.getByRole("button", { name: "Delete" }))
+    expect(onDelete).toHaveBeenCalledWith("q-espresso")
+  })
+
+  it("invites the viewer to write their first quack on an empty Mine tab", async () => {
+    const onWriteFirst = vi.fn()
+    render(
+      <QuackList
+        quacks={[]}
+        view="mine"
+        onWriteFirst={onWriteFirst}
+      />,
+    )
+
+    expect(
+      screen.getByText("Your quacks will appear here. You haven't posted any yet."),
+    ).toBeInTheDocument()
+    expect(screen.queryByText("No quacks yet. Post the first one.")).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole("button", { name: "Write your first quack" }))
+    expect(onWriteFirst).toHaveBeenCalledOnce()
+  })
+
+  it("names the search term on the Mine tab when a search finds nothing", () => {
+    render(
+      <QuackList
+        quacks={[]}
+        view="mine"
+        searchTerm="duck"
+      />,
+    )
+
+    expect(screen.getByText('No quacks match "duck".')).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Write your first quack" })).not.toBeInTheDocument()
+  })
 })

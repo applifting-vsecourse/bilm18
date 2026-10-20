@@ -2,6 +2,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { formatDate } from "@/lib/date"
 
 import type { Quack } from "@/features/quack/api/quackSchemas"
+import { DeleteQuackButton } from "@/features/quack/components/DeleteQuackButton"
 import { QuackPoll } from "@/features/quack/components/QuackPoll"
 import { UsersName } from "@/features/quack/components/UsersName"
 import { UsersUserName } from "@/features/quack/components/UsersUserName"
@@ -10,9 +11,11 @@ import { quackMoodLabels } from "@/features/quack/lib/moods"
 type QuackItemProps = {
   quack: Quack
   onVote?: (optionId: string) => void
+  // Pass only for the viewer's own quacks — without it there is no delete action.
+  onDelete?: () => void
 }
 
-export function QuackItem({ quack, onVote }: QuackItemProps) {
+export function QuackItem({ quack, onVote, onDelete }: QuackItemProps) {
   const { name, username } = quack.user
 
   const initials = name
@@ -28,22 +31,25 @@ export function QuackItem({ quack, onVote }: QuackItemProps) {
         <AvatarFallback>{initials}</AvatarFallback>
       </Avatar>
 
-      <div className="flex flex-1 flex-col gap-1">
-        <div className="flex flex-wrap items-baseline gap-2">
-          <span>
-            <UsersName name={name} /> <UsersUserName username={username} />
-          </span>
-          <span className="text-xs text-muted-foreground">·</span>
-          <time className="text-xs text-muted-foreground">{formatDate(quack.createdAt)}</time>
-          {quack.mood ? (
-            <>
-              <span className="text-xs text-muted-foreground">·</span>
-              <span className="text-xs text-muted-foreground">
-                <span className="sr-only">Mood: </span>
-                {quackMoodLabels[quack.mood]}
-              </span>
-            </>
-          ) : null}
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <div className="flex items-start gap-2">
+          <div className="flex flex-1 flex-wrap items-baseline gap-2">
+            <span>
+              <UsersName name={name} /> <UsersUserName username={username} />
+            </span>
+            <span className="text-xs text-muted-foreground">·</span>
+            <time className="text-xs text-muted-foreground">{formatDate(quack.createdAt)}</time>
+            {quack.mood ? (
+              <>
+                <span className="text-xs text-muted-foreground">·</span>
+                <span className="text-xs text-muted-foreground">
+                  <span className="sr-only">Mood: </span>
+                  {quackMoodLabels[quack.mood]}
+                </span>
+              </>
+            ) : null}
+          </div>
+          {onDelete ? <DeleteQuackButton onDelete={onDelete} /> : null}
         </div>
         <p className="text-sm break-words whitespace-pre-line">{quack.text}</p>
         {quack.poll ? (
