@@ -211,3 +211,26 @@ describe('QuackRepository.createQuack', () => {
     expect(quack.poll).toBeNull();
   });
 });
+
+describe('QuackRepository.deleteQuack', () => {
+  it('deletes only when the given user wrote the quack', async () => {
+    const { prisma, repository } = setup([]);
+    prisma.quack.deleteMany.mockResolvedValue({ count: 1 });
+
+    await expect(
+      repository.deleteQuack({ quackId: 'q1', userId: 'u1' }),
+    ).resolves.toBe(true);
+    expect(prisma.quack.deleteMany).toHaveBeenCalledWith({
+      where: { id: 'q1', userId: 'u1' },
+    });
+  });
+
+  it("reports false when nothing matched, e.g. someone else's quack", async () => {
+    const { prisma, repository } = setup([]);
+    prisma.quack.deleteMany.mockResolvedValue({ count: 0 });
+
+    await expect(
+      repository.deleteQuack({ quackId: 'q1', userId: 'u3' }),
+    ).resolves.toBe(false);
+  });
+});

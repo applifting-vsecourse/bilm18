@@ -14,6 +14,13 @@ type QuackListProps = {
   // The active search, if any — `quacks` is expected to be filtered already.
   searchTerm?: string
   onVote?: (quackId: string, optionId: string) => void
+  // Quacks by this user get a delete action; everyone else's don't.
+  currentUserId?: string
+  onDelete?: (quackId: string) => void
+  // "mine" when `quacks` holds only the viewer's own quacks.
+  view?: "all" | "mine"
+  // Offered when the viewer has no quacks of their own yet.
+  onWriteFirst?: () => void
 }
 
 export function QuackList({
@@ -23,6 +30,10 @@ export function QuackList({
   onReload,
   searchTerm = "",
   onVote,
+  currentUserId,
+  onDelete,
+  view = "all",
+  onWriteFirst,
 }: QuackListProps) {
   const trimmedSearchTerm = searchTerm.trim()
 
@@ -57,11 +68,28 @@ export function QuackList({
       ) : null}
 
       {!isLoading && !error && quacks.length === 0 ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">
-          {trimmedSearchTerm !== ""
-            ? `No quacks match "${trimmedSearchTerm}".`
-            : "No quacks yet. Post the first one."}
-        </p>
+        trimmedSearchTerm === "" && view === "mine" ? (
+          <div className="flex flex-col items-center gap-3 py-8 text-center">
+            <p className="text-sm text-muted-foreground">
+              Your quacks will appear here. You haven&apos;t posted any yet.
+            </p>
+            {onWriteFirst ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onWriteFirst}
+              >
+                Write your first quack
+              </Button>
+            ) : null}
+          </div>
+        ) : (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            {trimmedSearchTerm !== ""
+              ? `No quacks match "${trimmedSearchTerm}".`
+              : "No quacks yet. Post the first one."}
+          </p>
+        )
       ) : null}
 
       {quacks.map((quack) => (
@@ -69,6 +97,11 @@ export function QuackList({
           key={quack.id}
           quack={quack}
           onVote={onVote ? (optionId) => onVote(quack.id, optionId) : undefined}
+          onDelete={
+            onDelete && currentUserId !== undefined && quack.userId === currentUserId
+              ? () => onDelete(quack.id)
+              : undefined
+          }
         />
       ))}
     </div>
