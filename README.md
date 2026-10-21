@@ -50,11 +50,14 @@ Verification/reset emails are printed to the backend terminal (console mailer) u
 pnpm check-all                     # lint + type-check + tests + builds (what CI runs)
 pnpm backend test                  # backend unit tests (jest)
 pnpm frontend test:ci              # frontend component tests (vitest)
+pnpm e2e                           # end-to-end tests (Playwright) against the running app; not in CI
 pnpm backend prisma:migrations:run # create + apply a migration after schema changes
 pnpm backend prisma:studio         # browse/edit the database
 pnpm backend seed                  # re-seed the database
 pnpm dev:down                      # stop the database container
 ```
+
+`pnpm e2e` needs `pnpm dev` running and the browser installed once: `pnpm frontend exec playwright install chromium`.
 
 ## Deployment
 

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 
 import type { Quack } from "@/features/quack/api/quackSchemas"
 import { QuackItem } from "@/features/quack/components/QuackItem"
+import { canDeleteQuack } from "@/features/quack/lib/canDeleteQuack"
 
 type QuackListProps = {
   quacks: Quack[]
@@ -14,8 +15,10 @@ type QuackListProps = {
   // The active search, if any — `quacks` is expected to be filtered already.
   searchTerm?: string
   onVote?: (quackId: string, optionId: string) => void
-  // Quacks by this user get a delete action; everyone else's don't.
+  // Quacks by this user get a delete action; everyone else's don't…
   currentUserId?: string
+  // …unless the viewer is an admin: then every quack gets one.
+  isAdmin?: boolean
   onDelete?: (quackId: string) => void
   // "mine" when `quacks` holds only the viewer's own quacks.
   view?: "all" | "mine"
@@ -31,6 +34,7 @@ export function QuackList({
   searchTerm = "",
   onVote,
   currentUserId,
+  isAdmin = false,
   onDelete,
   view = "all",
   onWriteFirst,
@@ -98,10 +102,11 @@ export function QuackList({
           quack={quack}
           onVote={onVote ? (optionId) => onVote(quack.id, optionId) : undefined}
           onDelete={
-            onDelete && currentUserId !== undefined && quack.userId === currentUserId
+            onDelete && canDeleteQuack(quack, currentUserId, isAdmin)
               ? () => onDelete(quack.id)
               : undefined
           }
+          isOwn={quack.userId === currentUserId}
         />
       ))}
     </div>

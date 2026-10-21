@@ -34,6 +34,10 @@ Non-trivial logic (filtering, sorting, formatting) goes in `features/<name>/lib/
 
 Test fixtures reuse names and texts from `apps/backend/src/scripts/seed/seed/seed-database.ts`, so examples written against seed data in user stories can be asserted directly.
 
+### Permissions are decided in the service
+
+Who may do what is checked in the service, from the `@User()` identity — `user.id` for ownership, `user.role` compared to `UserRole` for roles. Never by name or email: the seed's Pond Admin is a regular `user`. The UI may hide a control (`isAdmin={user?.role === "admin"}`), but that is convenience, not the check. Every rule gets a unit test per role, and an E2E test in `apps/frontend/e2e/` that fails when the check is switched off — try it before you commit. E2E tests create the data they change, so the seed stays intact.
+
 ### The app is already running
 
 Assume the dev servers are up. If something is listening on the app's ports, that is this application: use it. Don't start a second instance, don't restart it, don't run `pnpm dev`.

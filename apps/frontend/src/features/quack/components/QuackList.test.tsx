@@ -85,6 +85,37 @@ describe("QuackList", () => {
     expect(onDelete).toHaveBeenCalledWith("q-espresso")
   })
 
+  it("offers delete on every quack to an admin, naming the author of someone else's", async () => {
+    const onDelete = vi.fn()
+    render(
+      <QuackList
+        quacks={[
+          quack({ id: "q-espresso", text: "third espresso" }),
+          quack({
+            id: "q-pond",
+            text: "is the sky just a very large and very shy pond?",
+            userId: "u2",
+            user: { id: "u2", name: "Deep Duck Thoughts", username: "DeepDuckThoughts" },
+          }),
+        ]}
+        currentUserId="u-superadmin"
+        isAdmin
+        onDelete={onDelete}
+      />,
+    )
+
+    const deleteButtons = screen.getAllByRole("button", { name: "Delete quack" })
+    expect(deleteButtons).toHaveLength(2)
+
+    // Deep Duck Thoughts' quack, the second one — the length check above guarantees it.
+    await userEvent.click(deleteButtons[1]!)
+    expect(
+      screen.getByRole("alertdialog", { name: "Delete @DeepDuckThoughts's quack?" }),
+    ).toBeInTheDocument()
+    await userEvent.click(screen.getByRole("button", { name: "Delete" }))
+    expect(onDelete).toHaveBeenCalledWith("q-pond")
+  })
+
   it("invites the viewer to write their first quack on an empty Mine tab", async () => {
     const onWriteFirst = vi.fn()
     render(

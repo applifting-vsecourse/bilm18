@@ -123,10 +123,10 @@ export class QuackRepository {
     return quack?.userId ?? null;
   }
 
-  // Deletes only if `userId` wrote it — the author check is part of the
-  // write itself, so no other code path can delete someone else's quack.
+  // Deletes the quack `userId` wrote. Who may delete it is decided by the
+  // service before calling this — `userId` is the author, not the caller.
   // Poll options and votes go with it (onDelete: Cascade). False when
-  // nothing matched.
+  // nothing matched, e.g. it was deleted in the meantime.
   async deleteQuack(quack: {
     quackId: string;
     userId: string;

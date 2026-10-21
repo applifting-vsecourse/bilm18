@@ -225,12 +225,12 @@ describe('QuackRepository.deleteQuack', () => {
     });
   });
 
-  it("reports false when nothing matched, e.g. someone else's quack", async () => {
+  it('reports false when nothing matched, e.g. deleted in the meantime', async () => {
     const { prisma, repository } = setup([]);
     prisma.quack.deleteMany.mockResolvedValue({ count: 0 });
 
     await expect(
-      repository.deleteQuack({ quackId: 'q1', userId: 'u3' }),
+      repository.deleteQuack({ quackId: 'q1', userId: 'u1' }),
     ).resolves.toBe(false);
   });
 });
