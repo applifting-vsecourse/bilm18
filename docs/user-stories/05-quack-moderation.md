@@ -39,7 +39,7 @@ Role `admin` už existuje (`UserRole` v `schema.prisma`) a v seedu ji má jen ú
 
 - [ ] **admin@example.com** smaže quack od **CaffeinatedDuck** → zmizí.
 - [ ] **deepduckthoughts@example.com** u quacku od CaffeinatedDuck koš nevidí a přes Swagger dostane 403.
-- [ ] **pondadmin@example.com** je přes jméno obyčejný `user` — taky 403.
+- [ ] **pondadmin@example.com** („Pond Admin“) má „admin“ jen ve jméně, roli má `user` — taky 403. Admina pozná server podle role ze session, ne podle jména.
 - [ ] **caffeinatedduck@example.com** dál smaže svůj vlastní quack.
 
 ### E2E test
