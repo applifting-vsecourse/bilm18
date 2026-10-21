@@ -55,6 +55,25 @@ describe("QuackItem", () => {
     expect(onDelete).toHaveBeenCalledOnce()
   })
 
+  it("names the author when an admin deletes someone else's quack", async () => {
+    const onDelete = vi.fn()
+    render(
+      <QuackItem
+        quack={quack()}
+        onDelete={onDelete}
+        isOwn={false}
+      />,
+    )
+
+    await userEvent.click(screen.getByRole("button", { name: "Delete quack" }))
+    expect(
+      screen.getByRole("alertdialog", { name: "Delete @CaffeinatedDuck's quack?" }),
+    ).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole("button", { name: "Delete" }))
+    expect(onDelete).toHaveBeenCalledOnce()
+  })
+
   it("keeps the quack when the user cancels", async () => {
     const onDelete = vi.fn()
     render(

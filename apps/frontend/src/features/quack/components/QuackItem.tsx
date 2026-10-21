@@ -11,11 +11,13 @@ import { quackMoodLabels } from "@/features/quack/lib/moods"
 type QuackItemProps = {
   quack: Quack
   onVote?: (optionId: string) => void
-  // Pass only for the viewer's own quacks — without it there is no delete action.
+  // Pass only when the viewer may delete this quack — without it there is no delete action.
   onDelete?: () => void
+  // False when an admin deletes someone else's quack: the confirmation then names the author.
+  isOwn?: boolean
 }
 
-export function QuackItem({ quack, onVote, onDelete }: QuackItemProps) {
+export function QuackItem({ quack, onVote, onDelete, isOwn = true }: QuackItemProps) {
   const { name, username } = quack.user
 
   const initials = name
@@ -49,7 +51,12 @@ export function QuackItem({ quack, onVote, onDelete }: QuackItemProps) {
               </>
             ) : null}
           </div>
-          {onDelete ? <DeleteQuackButton onDelete={onDelete} /> : null}
+          {onDelete ? (
+            <DeleteQuackButton
+              onDelete={onDelete}
+              authorUsername={isOwn ? undefined : username}
+            />
+          ) : null}
         </div>
         <p className="text-sm break-words whitespace-pre-line">{quack.text}</p>
         {quack.poll ? (

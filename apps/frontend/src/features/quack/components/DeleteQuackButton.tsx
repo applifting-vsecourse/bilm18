@@ -16,9 +16,11 @@ import { Button } from "@/components/ui/button"
 type DeleteQuackButtonProps = {
   // Called only after the user confirms.
   onDelete: () => void
+  // Set when deleting someone else's quack, so the admin sees whose it is.
+  authorUsername?: string
 }
 
-export function DeleteQuackButton({ onDelete }: DeleteQuackButtonProps) {
+export function DeleteQuackButton({ onDelete, authorUsername }: DeleteQuackButtonProps) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
@@ -32,7 +34,9 @@ export function DeleteQuackButton({ onDelete }: DeleteQuackButtonProps) {
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete this quack?</AlertDialogTitle>
+          <AlertDialogTitle>
+            {authorUsername ? `Delete @${authorUsername}'s quack?` : "Delete this quack?"}
+          </AlertDialogTitle>
           <AlertDialogDescription>
             It disappears from the feed for everyone. You can&apos;t undo this.
           </AlertDialogDescription>

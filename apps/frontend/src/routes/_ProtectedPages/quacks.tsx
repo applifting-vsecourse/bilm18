@@ -79,6 +79,8 @@ function QuacksPage() {
               onReload={() => void quacksQuery.refetch()}
               onVote={(quackId, optionId) => vote.mutate({ quackId, optionId })}
               currentUserId={user?.id}
+              // Only shows the action; the server decides who may delete.
+              isAdmin={user?.role === "admin"}
               onDelete={(quackId) => deleteQuack.mutate({ quackId })}
               onWriteFirst={() => textareaRef.current?.focus()}
             />
