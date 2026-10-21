@@ -1,3 +1,4 @@
+import { UserRole } from '@/generated/prisma/client';
 import { Quack, QuackMood, QuackPoll } from '@/modules/quack/domain/quack';
 import { QuackRepository } from '@/modules/quack/repositories/quack.repository';
 import { Identity } from '@/shared/auth/domain/identity';
@@ -35,18 +36,22 @@ export class QuacksService {
     });
   }
 
-  // Only the author may delete a quack — admins included, nobody else can.
+  // The author may delete their own quack; an admin may delete anyone's.
+  // This is the only permission check — the repository deletes what it's told.
   async deleteQuack(user: Identity, quackId: string): Promise<void> {
     const authorId = await this.quackRepository.getAuthorId(quackId);
     if (!authorId) throw new NotFoundException(QUACK_NOT_FOUND_MESSAGE);
-    if (authorId !== user.id) {
+
+    // who is asking, and their role, come from the session, never from the request
+    const isOwner = authorId === user.id;
+    const isAdmin = user.role === UserRole.admin;
+    if (!isOwner && !isAdmin) {
       throw new ForbiddenException(NOT_YOUR_QUACK_MESSAGE);
     }
 
-    // the author is taken from the session, never from the request
     const deleted = await this.quackRepository.deleteQuack({
       quackId,
-      userId: user.id,
+      userId: authorId,
     });
     // Deleted in between, e.g. from another tab.
     if (!deleted) throw new NotFoundException(QUACK_NOT_FOUND_MESSAGE);
