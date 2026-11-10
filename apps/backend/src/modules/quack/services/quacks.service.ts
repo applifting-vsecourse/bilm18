@@ -1,5 +1,10 @@
 import { UserRole } from '@/generated/prisma/client';
-import { Quack, QuackMood, QuackPoll } from '@/modules/quack/domain/quack';
+import {
+  Quack,
+  QuackMood,
+  QuackPoll,
+  QuackScope,
+} from '@/modules/quack/domain/quack';
 import { QuackRepository } from '@/modules/quack/repositories/quack.repository';
 import { Identity } from '@/shared/auth/domain/identity';
 import {
@@ -18,9 +23,36 @@ export const NOT_YOUR_QUACK_MESSAGE = 'You can only delete your own quacks';
 export class QuacksService {
   constructor(private readonly quackRepository: QuackRepository) {}
 
-  // The viewer decides which poll vote comes back as "mine".
-  async getQuacks(user: Identity): Promise<Quack[]> {
-    return this.quackRepository.getQuacks(user.id);
+  // The viewer decides which poll vote comes back as "mine" — and, for the
+  // "mine" scope, whose quacks these are. Never an id from the request.
+  async getQuacks(user: Identity, scope: QuackScope = 'all'): Promise<Quack[]> {
+    return this.quackRepository.getQuacks(user.id, scope);
+  }
+
+  // `quackId` may be the top-level quack or any reply in the thread.
+  async getThread(user: Identity, quackId: string): Promise<Quack[]> {
+    const thread = await this.quackRepository.getThread(quackId, user.id);
+    if (!thread) throw new NotFoundException(QUACK_NOT_FOUND_MESSAGE);
+    return thread;
+  }
+
+  // Anyone signed in may reply to a live quack. A deleted one answers 404,
+  // like one that never existed. A reply has no poll — CreateReplyDto has
+  // no field for one.
+  async createReply(
+    user: Identity,
+    parentId: string,
+    replyData: { text: string; mood?: QuackMood },
+  ): Promise<Quack> {
+    const reply = await this.quackRepository.createReply({
+      parentId,
+      text: replyData.text,
+      mood: replyData.mood,
+      // the author is taken from the session, never from the request body
+      userId: user.id,
+    });
+    if (!reply) throw new NotFoundException(QUACK_NOT_FOUND_MESSAGE);
+    return reply;
   }
 
   async createQuack(
@@ -38,8 +70,11 @@ export class QuacksService {
 
   // The author may delete their own quack; an admin may delete anyone's.
   // This is the only permission check — the repository deletes what it's told.
+  // A quack with replies stays as a tombstone (docs/adr/0001) — the
+  // repository decides which; the rule for who may delete is the same.
   async deleteQuack(user: Identity, quackId: string): Promise<void> {
     const authorId = await this.quackRepository.getAuthorId(quackId);
+    // Also a tombstone: it has no author, and is already deleted.
     if (!authorId) throw new NotFoundException(QUACK_NOT_FOUND_MESSAGE);
 
     // who is asking, and their role, come from the session, never from the request

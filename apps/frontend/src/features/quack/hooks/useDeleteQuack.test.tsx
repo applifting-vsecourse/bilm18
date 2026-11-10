@@ -24,6 +24,11 @@ const quack = (id: string, text: string): Quack => ({
   mood: null,
   userId: caffeinatedDuck.id,
   createdAt: new Date("2026-01-01T12:00:00Z"),
+  deletedAt: null,
+  parentId: null,
+  rootId: null,
+  replyCount: 0,
+  parent: null,
   user: caffeinatedDuck,
   poll: null,
 })
@@ -58,6 +63,26 @@ describe("useDeleteQuack", () => {
 
     await waitFor(() => expect(feedIds()).toEqual(["q-lunch"]))
     expect(deleteQuack.mock.calls[0]?.[0]).toEqual({ quackId: "q-espresso" })
+  })
+
+  it("shows a quack with replies as deleted in an open thread, keeping the replies", async () => {
+    deleteQuack.mockReturnValue(new Promise(() => undefined))
+    const { queryClient, result } = setup()
+    const reply = { ...lunch, id: "q-reply", parentId: "q-espresso", rootId: "q-espresso" }
+    queryClient.setQueryData(quackKeys.thread("q-espresso"), [espresso, reply])
+
+    act(() => result.current.mutate({ quackId: "q-espresso" }))
+
+    await waitFor(() =>
+      expect(
+        queryClient
+          .getQueryData<Quack[]>(quackKeys.thread("q-espresso"))
+          ?.map((q) => [q.id, q.text]),
+      ).toEqual([
+        ["q-espresso", null],
+        ["q-reply", "Where do we go for lunch?"],
+      ]),
+    )
   })
 
   it("reloads the feed once the delete is through", async () => {

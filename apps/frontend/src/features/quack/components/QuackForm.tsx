@@ -16,22 +16,20 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { cn } from "@/lib/utils"
 
-import { quackMoods, quackMoodSchema, type QuackMood } from "@/features/quack/api/quackSchemas"
+import { quackMoodSchema, type QuackMood } from "@/features/quack/api/quackSchemas"
+import { MoodToggleGroup } from "@/features/quack/components/MoodToggleGroup"
 import { useAddQuack } from "@/features/quack/hooks/useAddQuack"
-import { quackMoodLabels } from "@/features/quack/lib/moods"
 import {
   findDuplicateOptions,
   POLL_MAX_OPTIONS,
   POLL_MIN_OPTIONS,
   POLL_OPTION_MAX_LENGTH,
 } from "@/features/quack/lib/pollOptions"
+import { QUACK_MAX_LENGTH } from "@/features/quack/lib/quackText"
 
-// Mirrors the server-side DTO (MaxLength(280)) so the user is told before
-// the request is made — the server still validates independently.
-const MAX_LENGTH = 280
+const MAX_LENGTH = QUACK_MAX_LENGTH
 
 const schema = z.object({
   text: z
@@ -152,27 +150,12 @@ export function QuackForm({ defaultMood, textareaRef, className }: QuackFormProp
               {/* A toggle group is a div, which `htmlFor` can't label — name it via aria-labelledby. */}
               <FormLabel id={moodLabelId}>Mood</FormLabel>
               <FormControl>
-                <ToggleGroup
-                  type="single"
-                  variant="outline"
-                  size="sm"
-                  aria-labelledby={moodLabelId}
-                  disabled={addQuack.isPending}
-                  value={field.value ?? ""}
-                  // Pressing the active mood again unpresses it: "" means no mood.
-                  onValueChange={(value) =>
-                    field.onChange(value === "" ? undefined : quackMoodSchema.parse(value))
-                  }
-                >
-                  {quackMoods.map((mood) => (
-                    <ToggleGroupItem
-                      key={mood}
-                      value={mood}
-                    >
-                      {quackMoodLabels[mood]}
-                    </ToggleGroupItem>
-                  ))}
-                </ToggleGroup>
+                <MoodToggleGroup
+                  labelledBy={moodLabelId}
+                  isDisabled={addQuack.isPending}
+                  value={field.value}
+                  onChange={field.onChange}
+                />
               </FormControl>
             </FormItem>
           )}

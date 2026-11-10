@@ -19,7 +19,12 @@ const aQuack = (overrides: Partial<Quack> = {}): Quack => ({
   createdAt: new Date('2026-01-01T12:00:00Z'),
   updatedAt: new Date('2026-01-01T12:00:00Z'),
   user: { id: 'u1', name: 'Caffeinated Duck', username: 'CaffeinatedDuck' },
+  deletedAt: null,
+  parentId: null,
+  rootId: null,
   poll: null,
+  replyCount: 0,
+  parent: null,
   ...overrides,
 });
 
@@ -44,7 +49,17 @@ describe('QuacksService', () => {
 
     await service.getQuacks({ id: 'u2' } as Identity);
     // the viewer decides which poll vote is "mine"
-    expect(repository.getQuacks).toHaveBeenCalledWith('u2');
+    expect(repository.getQuacks).toHaveBeenCalledWith('u2', 'all');
+  });
+
+  it('lists "mine" for the signed-in user, never for an id from the request', async () => {
+    const repository = mock<QuackRepository>();
+    repository.getQuacks.mockResolvedValue([]);
+
+    const service = new QuacksService(repository);
+
+    await service.getQuacks({ id: 'u1' } as Identity, 'mine');
+    expect(repository.getQuacks).toHaveBeenCalledWith('u1', 'mine');
   });
 
   it('creates a quack owned by the signed-in user', async () => {
@@ -313,5 +328,145 @@ describe('QuacksService.createQuack with a poll', () => {
       pollOptions: ['Pizza', 'Sushi', 'Canteen'],
       userId: 'u1',
     });
+  });
+});
+
+// The seed thread under Caffeinated Duck's "just spilled coffee".
+const spilledCoffee = aQuack({
+  id: 'q-coffee',
+  text: 'just spilled coffee on my keyboard',
+  replyCount: 3,
+});
+const riceWorks = aQuack({
+  id: 'q-rice',
+  text: 'Rice works. So does bread, allegedly.',
+  userId: 'u3',
+  user: { id: 'u3', name: 'The Bread Critic', username: 'BreadCritic' },
+  parentId: 'q-coffee',
+  rootId: 'q-coffee',
+  parent: { id: 'q-coffee', username: 'CaffeinatedDuck' },
+});
+
+describe('QuacksService.getThread', () => {
+  const deepDuckThoughts = { id: 'u2', role: 'user' } as Identity;
+
+  it('returns the thread as the signed-in user sees it', async () => {
+    const repository = mock<QuackRepository>();
+    repository.getThread.mockResolvedValue([spilledCoffee, riceWorks]);
+
+    const service = new QuacksService(repository);
+
+    await expect(
+      service.getThread(deepDuckThoughts, 'q-rice'),
+    ).resolves.toEqual([spilledCoffee, riceWorks]);
+    // the viewer decides which poll vote is "mine"
+    expect(repository.getThread).toHaveBeenCalledWith('q-rice', 'u2');
+  });
+
+  it('rejects a quack that does not exist', async () => {
+    const repository = mock<QuackRepository>();
+    repository.getThread.mockResolvedValue(null);
+
+    const service = new QuacksService(repository);
+
+    await expect(
+      service.getThread(deepDuckThoughts, 'q-missing'),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
+describe('QuacksService.createReply', () => {
+  const superadmin = { id: 'u0', role: 'admin' } as Identity;
+  const caffeinatedDuck = { id: 'u1', role: 'user' } as Identity;
+  const breadCritic = { id: 'u3', role: 'user' } as Identity;
+
+  it("replies to someone else's quack as the signed-in user", async () => {
+    const repository = mock<QuackRepository>();
+    repository.createReply.mockResolvedValue(riceWorks);
+
+    const service = new QuacksService(repository);
+
+    await expect(
+      service.createReply(breadCritic, 'q-coffee', {
+        text: 'Rice works. So does bread, allegedly.',
+      }),
+    ).resolves.toEqual(riceWorks);
+    // the author comes from the session, not from the caller's payload
+    expect(repository.createReply).toHaveBeenCalledWith({
+      parentId: 'q-coffee',
+      text: 'Rice works. So does bread, allegedly.',
+      userId: 'u3',
+    });
+  });
+
+  it('lets the author reply in their own thread, with a mood', async () => {
+    const repository = mock<QuackRepository>();
+    repository.createReply.mockResolvedValue(
+      aQuack({ text: 'it was a sourdough keyboard now', mood: 'silly' }),
+    );
+
+    const service = new QuacksService(repository);
+
+    await service.createReply(caffeinatedDuck, 'q-rice', {
+      text: 'it was a sourdough keyboard now',
+      mood: 'silly',
+    });
+    expect(repository.createReply).toHaveBeenCalledWith({
+      parentId: 'q-rice',
+      text: 'it was a sourdough keyboard now',
+      mood: 'silly',
+      userId: 'u1',
+    });
+  });
+
+  it('lets an admin reply like anyone else', async () => {
+    const repository = mock<QuackRepository>();
+    repository.createReply.mockResolvedValue(aQuack());
+
+    const service = new QuacksService(repository);
+
+    await service.createReply(superadmin, 'q-coffee', { text: 'Noted.' });
+    expect(repository.createReply).toHaveBeenCalledWith({
+      parentId: 'q-coffee',
+      text: 'Noted.',
+      userId: 'u0',
+    });
+  });
+
+  // The repository answers null for both: a missing quack, and a deleted one
+  // (a tombstone) — nobody can reply to it, admins included.
+  it.each([
+    ['a regular user', breadCritic],
+    ['an admin', superadmin],
+  ])(
+    'rejects a reply to a deleted or missing quack, for %s',
+    async (_, user) => {
+      const repository = mock<QuackRepository>();
+      repository.createReply.mockResolvedValue(null);
+
+      const service = new QuacksService(repository);
+
+      await expect(
+        service.createReply(user, 'q-deleted', { text: 'hello?' }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    },
+  );
+});
+
+describe('QuacksService.deleteQuack on a tombstone', () => {
+  // A tombstone has no author, so getAuthorId finds none.
+  it.each([
+    ['its former author', { id: 'u3', role: 'user' } as Identity],
+    ['an admin', { id: 'u0', role: 'admin' } as Identity],
+  ])('answers 404 to %s', async (_, user) => {
+    const repository = mock<QuackRepository>();
+    repository.getAuthorId.mockResolvedValue(null);
+
+    const service = new QuacksService(repository);
+
+    await expect(
+      service.deleteQuack(user, 'q-tombstone'),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(repository.deleteQuack).not.toHaveBeenCalled();
   });
 });

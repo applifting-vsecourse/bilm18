@@ -23,6 +23,11 @@ const lunchQuack: Quack = {
   mood: null,
   userId: "u1",
   createdAt: new Date("2026-01-01T12:00:00Z"),
+  deletedAt: null,
+  parentId: null,
+  rootId: null,
+  replyCount: 0,
+  parent: null,
   user: { id: "u1", name: "Caffeinated Duck", username: "CaffeinatedDuck" },
   poll: {
     options: [

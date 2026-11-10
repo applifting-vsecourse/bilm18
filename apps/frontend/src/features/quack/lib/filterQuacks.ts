@@ -8,13 +8,14 @@ export function normalizeSearchTerm(term: string): string {
 
 // Keeps quacks whose text, author name or username contains the term as one
 // contiguous phrase. Feed order is preserved; an empty term keeps everything.
+// A deleted quack (tombstone) has nothing to match, so a search drops it.
 export function filterQuacks(quacks: Quack[], term: string): Quack[] {
   const needle = normalizeSearchTerm(term)
   if (needle === "") return quacks
 
   return quacks.filter((quack) =>
-    [quack.text, quack.user.name, quack.user.username].some((field) =>
-      field.toLowerCase().includes(needle),
+    [quack.text, quack.user?.name, quack.user?.username].some(
+      (field) => field?.toLowerCase().includes(needle) ?? false,
     ),
   )
 }

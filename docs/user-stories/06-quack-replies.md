@@ -15,29 +15,31 @@ Product owner chce dvě věci, které jdou proti sobě:
 - **Odpovědi patří lidem, kteří je napsali.** Když autor smaže quack, na který už někdo odpověděl, odpovědi s ním nesmí zmizet.
 - **Smazaný obsah musí opravdu zmizet.** Když někdo svůj quack smaže, jeho text v aplikaci nezůstane.
 
-Proto se ze smazaného quacku, pod kterým už jsou odpovědi, stane prázdné místo „Tento quack byl smazán“. Text, autor, nálada ani anketa po něm nezůstanou, ale vlákno drží pohromadě. Quack bez odpovědí zmizí úplně, jako dnes.
+Proto se ze smazaného quacku, pod kterým už jsou odpovědi, stane prázdné místo „This quack was deleted“. Text, autor, nálada ani anketa po něm nezůstanou, ale vlákno drží pohromadě. Quack bez odpovědí zmizí úplně, jako dnes.
 
 ## Akceptační kritéria
 
+Texty v UI jsou anglicky jako zbytek aplikace („Reply“, „This quack was deleted“, „↪ Replying to @…“).
+
 ### Odpovídání
 
-- [ ] Pod každým quackem, i pod odpovědí, je tlačítko **Odpovědět**. Otevře formulář přímo pod quackem.
+- [ ] Pod každým quackem, i pod odpovědí, je tlačítko **Reply**. Otevře formulář přímo pod quackem.
 - [ ] Odpovídat jde i na odpovědi, do libovolné hloubky.
 - [ ] Odpověď má **text a volitelnou náladu**, předvyplněnou z profilu jako u nového quacku. Platí stejná pravidla pro text jako u quacku.
 - [ ] Odpověď **nemůže mít anketu**. Server to odmítne, i když request nepřijde přes UI.
-- [ ] Na **smazaný quack odpovědět nejde** a tlačítko Odpovědět u něj není. Kdo měl otevřenou starou stránku a odpověď přesto odešle, dostane chybu a vlákno se znovu načte.
+- [ ] Na **smazaný quack odpovědět nejde** a tlačítko Reply u něj není. Kdo měl otevřenou starou stránku a odpověď přesto odešle, dostane chybu a vlákno se znovu načte.
 - [ ] Odpověď se nikdy neztratí kvůli tomu, že někdo ve stejnou chvíli maže quack, na který odpovídá.
 
 ### Feed (záložka All)
 
 - [ ] Feed ukazuje **jen quacky, ne odpovědi**, ve stejném pořadí jako dnes (nejnovější nahoře).
 - [ ] U quacku s odpověďmi je **💬 N**, kde N je počet odpovědí v celém vlákně, včetně odpovědí na odpovědi a bez smazaných. Klik otevře vlákno.
-- [ ] Smazaný quack, pod kterým jsou odpovědi, **zůstává ve feedu** na svém místě jako „Tento quack byl smazán · 💬 N“ a vlákno jde otevřít.
+- [ ] Smazaný quack, pod kterým jsou odpovědi, **zůstává ve feedu** na svém místě jako „This quack was deleted · 💬 N“ a vlákno jde otevřít.
 
 ### Záložka Mine
 
 - [ ] Mine ukazuje **všechny moje quacky i moje odpovědi**, nejnovější nahoře.
-- [ ] Odpověď v Mine má nad textem řádek **„↪ Odpověď na @CaffeinatedDuck“**, a pokud byl ten quack smazán, **„↪ Odpověď na smazaný quack“**. Klik otevře vlákno na téhle odpovědi.
+- [ ] Odpověď v Mine má nad textem řádek **„↪ Replying to @CaffeinatedDuck“**, a pokud byl ten quack smazán, **„↪ Replying to a deleted quack“**. Klik otevře vlákno na téhle odpovědi.
 - [ ] Smazané quacky v Mine nejsou.
 - [ ] Admin vidí v Mine jen své quacky (beze změny proti story 05).
 
@@ -46,16 +48,16 @@ Proto se ze smazaného quacku, pod kterým už jsou odpovědi, stane prázdné m
 - [ ] Nahoře je původní quack, pod každým quackem jeho odpovědi **od nejstarší po nejnovější**.
 - [ ] Odpovědi jsou odsazené **nejvýš do 3. úrovně**. Hlubší odpovědi už se dál neodsazují a nesou „↪ @jméno“ (nebo „↪ smazaný quack“), aby bylo vidět, komu odpovídají.
 - [ ] Odkaz na odpověď, třeba z Mine, otevře celé vlákno, odroluje na ni a krátce ji zvýrazní.
-- [ ] Smazaný quack je šedý řádek **„Tento quack byl smazán“** bez autora, času, nálady a tlačítek.
-- [ ] Odkaz na quack, který neexistuje nebo byl smazán celý, ukáže **„Tento quack neexistuje“** s odkazem zpět na feed.
+- [ ] Smazaný quack je šedý řádek **„This quack was deleted“** bez autora, času, nálady a tlačítek.
+- [ ] Odkaz na quack, který neexistuje nebo byl smazán celý, ukáže **„This quack doesn't exist“** s odkazem zpět na feed.
 - [ ] Koš u quacku ve vlákně vidí autor a admin, stejně jako ve feedu.
 
 ### Mazání
 
 - [ ] Kdo smí mazat, se nemění: **autor, nebo admin** (story 05). Kdo jiný se o to pokusí, i přímo přes API, dostane chybu a quack zůstane.
 - [ ] **Quack bez odpovědí** zmizí úplně, i s anketou a hlasy, jako dnes.
-- [ ] **Quack s odpověďmi** se změní na „Tento quack byl smazán“. Jeho text, autor, nálada i anketa zmizí z aplikace i z databáze. **Odpovědi zůstanou na svém místě.**
-- [ ] Když se smaže poslední odpověď pod smazaným quackem, zmizí i to prázdné místo „Tento quack byl smazán“, a tak dál nahoru po vlákně.
+- [ ] **Quack s odpověďmi** se změní na „This quack was deleted“. Jeho text, autor, nálada i anketa zmizí z aplikace i z databáze. **Odpovědi zůstanou na svém místě.**
+- [ ] Když se smaže poslední odpověď pod smazaným quackem, zmizí i to prázdné místo „This quack was deleted“, a tak dál nahoru po vlákně.
 
 ### Ruční ověření (seed data)
 
@@ -69,8 +71,8 @@ CaffeinatedDuck: just spilled coffee on my keyboard
 ```
 
 - [ ] Feed All ukazuje u „just spilled coffee…“ **💬 3** a samotné odpovědi ve feedu nejsou.
-- [ ] **caffeinatedduck@example.com** v Mine vidí svůj quack i odpověď „it was a sourdough keyboard now“ s „↪ Odpověď na @BreadCritic“.
-- [ ] **BreadCritic** smaže „Rice works…“. Ve vlákně je místo ní „Tento quack byl smazán“ a pod ním odpověď CaffeinatedDuck. CaffeinatedDuck v Mine vidí „↪ Odpověď na smazaný quack“.
+- [ ] **caffeinatedduck@example.com** v Mine vidí svůj quack i odpověď „it was a sourdough keyboard now“ s „↪ Replying to @BreadCritic“.
+- [ ] **BreadCritic** smaže „Rice works…“. Ve vlákně je místo ní „This quack was deleted“ a pod ním odpověď CaffeinatedDuck. CaffeinatedDuck v Mine vidí „↪ Replying to a deleted quack“.
 - [ ] **deepduckthoughts@example.com** u odpovědi BreadCritic koš nevidí a přes Swagger dostane 403.
 - [ ] **admin@example.com** smaže odpověď kohokoli.
 
@@ -113,7 +115,7 @@ Nový modul se nezakládá, všechno patří do quacků.
 
 - `features/quack/api/`: zod schéma s nullable poli, `getThread`, `createReply` a `scope` u seznamu.
 - `features/quack/lib/buildThreadTree.ts`: čistá funkce, která z plochého seznamu složí strom (pořadí, hloubka, omezení odsazení), a test k ní.
-- `features/quack/components/`: formulář odpovědi (znovu použije picker nálady), řádek náhrobku, počet 💬, řádek „↪ Odpověď na…“.
+- `features/quack/components/`: formulář odpovědi (znovu použije picker nálady), řádek náhrobku, počet 💬, řádek „↪ Replying to…“.
 - `routes/_ProtectedPages/quacks.tsx`: Mine už nefiltruje podle `userId` na frontendu, volá API se `scope=mine`.
 - Nová route `routes/_ProtectedPages/quacks.$quackId.tsx`, která podle `#replyId` odroluje na odpověď.
 
@@ -155,7 +157,7 @@ model Quack {
   threadReplies Quack[] @relation("QuackThread")
 
   // A quack with options is a poll — there is no separate poll table.
-  // Replies never have one (checked in the service).
+  // Replies never have one (CreateReplyDto has no field for it).
   pollOptions PollOption[]
   pollVotes   PollVote[]
 
@@ -216,8 +218,11 @@ V jedné transakci:
 
 **Souběh s odpovědí:**
 
-- Úplné smazání rodiče, na kterého právě někdo odpovídá, zastaví cizí klíč `NoAction`. Service chybu (`P2003`) odchytí a zopakuje rozhodnutí, takže z rodiče se stane náhrobek.
-- Opačný případ je vložení odpovědi pod rodiče, který se právě mění na náhrobek. Tomu cizí klíč nezabrání, protože `update` nemění klíč. `createReply` proto musí v transakci zamknout řádek rodiče, ověřit `deletedAt IS NULL` a až pak vložit odpověď.
+`deleteQuack` i `createReply` v transakci nejdřív zamknou řádek quacku, pod kterým se vlákno mění (`SELECT … FOR UPDATE` přes `$queryRaw`, Prisma řádkový zámek neumí). Proto se nikdy nepotkají:
+
+- Kdo odpovídá na quack, který se právě maže, počká. Pak uvidí náhrobek (404), nebo quack už neexistuje (404).
+- Kdo maže quack, na který se právě odpovídá, počká, až je odpověď uložená. Pak ji při počítání uvidí a udělá náhrobek.
+- Kdyby zámek někdo obešel, tvrdé smazání quacku s odpovědí stejně zastaví cizí klíč `NoAction` (`P2003`). Ověřeno při vypnuté větvi s náhrobkem.
 
 ### Seed
 
@@ -225,16 +230,17 @@ Do `seed-database.ts` přidat vlákno z [Ručního ověření](#ruční-ověřen
 
 ### Testy
 
-- **Backend (service spec):**
-  - odpověď: živý rodič, náhrobek → 404, neexistující → 404, `pollOptions` → 400, `rootId` u odpovědi na kořen i na hlubší odpověď;
+- **Backend (service a repository spec, DTO spec):**
+  - odpověď: živý rodič, náhrobek → 404, neexistující → 404, `rootId` u odpovědi na kořen i na hlubší odpověď;
+  - `pollOptions` v odpovědi → 400 (`CreateReplyDto` se stejným nastavením `ValidationPipe` jako controller);
   - mazání: bez odpovědí → delete, s odpověďmi → náhrobek, úklid nahoru přes víc úrovní;
   - oprávnění pro roli `user` (autor i cizí) a `admin`.
 - **Frontend lib:** `buildThreadTree` (pořadí, hloubka nad 3, náhrobek uprostřed vlákna).
-- **Frontend komponenty:** formulář odpovědi, řádek náhrobku bez tlačítek, „↪ Odpověď na smazaný quack“ v Mine.
+- **Frontend komponenty:** formulář odpovědi, řádek náhrobku bez tlačítek, „↪ Replying to a deleted quack“ v Mine.
 - **Fixtures** používají jména a texty ze seedu.
 - **E2E (`apps/frontend/e2e/replies.e2e.ts`):** testy si vytvářejí vlastní data s unikátním textem (`Reply ${Date.now()}`).
   - „reply appears under the quack“: odpověď je ve vlákně a ve feedu přibude 💬 1.
-  - „replies survive when the parent is deleted“: A napíše quack, B odpoví, A quack smaže. Ve vlákně je „Tento quack byl smazán“, text A nikde není a odpověď B zůstala.
+  - „replies survive when the parent is deleted“: A napíše quack, B odpoví, A quack smaže. Ve vlákně je „This quack was deleted“, text A nikde není a odpověď B zůstala.
   - „cannot reply to a deleted quack“: API vrátí 404.
   - „nobody can delete someone else's reply“: API vrátí 403.
   - Když se v service vypne větev s náhrobkem (vždy tvrdé mazání), druhý test **spadne**. Ověřit ručně.

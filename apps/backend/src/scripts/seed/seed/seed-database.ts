@@ -1,6 +1,6 @@
 import { PrismaService } from '@/core/prisma/prisma.service';
 import { User } from '@/generated/prisma/client';
-import { QuackMood } from '@/modules/quack/domain/quack';
+import { Quack, QuackMood } from '@/modules/quack/domain/quack';
 import { BetterAuth } from '@/shared/auth/providers/better-auth.provider';
 import { Config } from '@/shared/config/config.service';
 import { createPollVote } from './create-poll-vote';
@@ -191,15 +191,19 @@ Please stop tagging me.`,
   ];
 
   const now = Date.now();
+  const at = (minutesAgo: number): Date =>
+    new Date(now - minutesAgo * MINUTE_IN_MS);
+  let spilledCoffee: Quack | undefined;
 
   for (const { author, minutesAgo, text, mood, poll } of exampleQuacks) {
     const quack = await createQuack(prisma, {
       text,
       mood,
       userId: author.id,
-      createdAt: new Date(now - minutesAgo * MINUTE_IN_MS),
+      createdAt: at(minutesAgo),
       pollOptions: poll?.options,
     });
+    if (text.startsWith('just spilled coffee')) spilledCoffee = quack;
 
     for (const { voter, option } of poll?.votes ?? []) {
       await createPollVote(prisma, {
@@ -209,4 +213,30 @@ Please stop tagging me.`,
       });
     }
   }
+
+  console.log('Creating an example thread');
+
+  // Replies under Caffeinated Duck's spilled coffee: the feed shows 💬 3,
+  // and one reply answers another.
+  if (!spilledCoffee)
+    throw new Error('Seed quack "just spilled coffee" is missing');
+
+  const riceWorks = await createQuack(prisma, {
+    text: 'Rice works. So does bread, allegedly.',
+    userId: breadCritic.id,
+    createdAt: at(1960),
+    parent: spilledCoffee,
+  });
+  await createQuack(prisma, {
+    text: 'Is the keyboard wet, or is the coffee just very dry?',
+    userId: deepDuckThoughts.id,
+    createdAt: at(1940),
+    parent: spilledCoffee,
+  });
+  await createQuack(prisma, {
+    text: 'it was a sourdough keyboard now',
+    userId: caffeinatedDuck.id,
+    createdAt: at(1930),
+    parent: riceWorks,
+  });
 };
