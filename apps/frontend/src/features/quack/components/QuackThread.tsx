@@ -3,6 +3,7 @@ import { QuackItem } from "@/features/quack/components/QuackItem"
 import { QuackReplyActions } from "@/features/quack/components/QuackReplyActions"
 import { ReplyForm } from "@/features/quack/components/ReplyForm"
 import { ReplyingTo } from "@/features/quack/components/ReplyingTo"
+import type { ReplyDraft } from "@/features/quack/hooks/useReplyDraft"
 import type { ThreadNode } from "@/features/quack/lib/buildThreadTree"
 import { canDeleteQuack } from "@/features/quack/lib/canDeleteQuack"
 
@@ -18,6 +19,8 @@ type QuackThreadProps = {
   onDelete?: (quackId: string) => void
   // The quack whose reply form is open, if any.
   replyFormFor?: string | null
+  replyDraft?: ReplyDraft
+  onReplyDraftChange?: (draft: ReplyDraft) => void
   onReplyOpen?: (quackId: string) => void
   onReplyClose?: () => void
   defaultMood?: QuackMood
@@ -43,6 +46,8 @@ function ThreadBranch({ node, ...props }: QuackThreadProps & { node: ThreadNode 
     isAdmin = false,
     onDelete,
     replyFormFor,
+    replyDraft,
+    onReplyDraftChange,
     onReplyOpen,
     onReplyClose,
     defaultMood,
@@ -71,11 +76,13 @@ function ThreadBranch({ node, ...props }: QuackThreadProps & { node: ThreadNode 
           onReply={onReplyOpen ? () => onReplyOpen(quack.id) : undefined}
           shouldShowThreadLink={false}
         />
-        {replyFormFor === quack.id && quack.user ? (
+        {replyFormFor === quack.id ? (
           <ReplyForm
             quackId={quack.id}
-            authorUsername={quack.user.username}
+            authorUsername={quack.user?.username ?? null}
             defaultMood={defaultMood}
+            draft={replyDraft}
+            onDraftChange={onReplyDraftChange}
             onClose={() => onReplyClose?.()}
             className="mt-2"
           />

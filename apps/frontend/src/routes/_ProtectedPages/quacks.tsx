@@ -11,7 +11,9 @@ import { quacksQueryOptions } from "@/features/quack/api/quacksQueryOptions"
 import { QuackForm } from "@/features/quack/components/QuackForm"
 import { QuackList } from "@/features/quack/components/QuackList"
 import { QuackSearch } from "@/features/quack/components/QuackSearch"
+import { ReplyToDeletedQuack } from "@/features/quack/components/ReplyToDeletedQuack"
 import { useDeleteQuack } from "@/features/quack/hooks/useDeleteQuack"
+import { useReplyDraft } from "@/features/quack/hooks/useReplyDraft"
 import { useVote } from "@/features/quack/hooks/useVote"
 import { filterQuacks } from "@/features/quack/lib/filterQuacks"
 
@@ -26,7 +28,7 @@ function QuacksPage() {
   // after a refresh or navigating away.
   const [searchTerm, setSearchTerm] = useState("")
   const [view, setView] = useState<FeedView>("all")
-  const [replyFormFor, setReplyFormFor] = useState<string | null>(null)
+  const reply = useReplyDraft()
   // All: top-level quacks only. Mine: everything the viewer wrote, replies
   // included — the server decides whose from the session.
   const quacksQuery = useQuery(quacksQueryOptions(view))
@@ -40,6 +42,11 @@ function QuacksPage() {
   const deleteQuack = useDeleteQuack()
 
   const quacks = quacksQuery.data ?? []
+  // The quack being replied to is gone from the list: it was deleted.
+  const isReplyTargetGone =
+    reply.replyFormFor !== null &&
+    quacksQuery.isSuccess &&
+    !quacks.some((quack) => quack.id === reply.replyFormFor)
 
   return (
     <>
@@ -55,7 +62,11 @@ function QuacksPage() {
 
         <Tabs
           value={view}
-          onValueChange={(value) => setView(value === "mine" ? "mine" : "all")}
+          onValueChange={(value) => {
+            setView(value === "mine" ? "mine" : "all")
+            // The other tab lists other quacks: an open form wouldn't find its quack.
+            reply.closeReply()
+          }}
         >
           <TabsList aria-label="Which quacks to show">
             <TabsTrigger value="all">All</TabsTrigger>
@@ -69,6 +80,13 @@ function QuacksPage() {
               onChange={setSearchTerm}
               className="mt-2 mb-4"
             />
+
+            {isReplyTargetGone ? (
+              <ReplyToDeletedQuack
+                draft={reply.replyDraft}
+                onDismiss={reply.closeReply}
+              />
+            ) : null}
 
             <QuackList
               // The feed is fetched whole (no paging), so filtering stays client-side.
@@ -86,9 +104,11 @@ function QuacksPage() {
               isAdmin={user?.role === "admin"}
               onDelete={(quackId) => deleteQuack.mutate({ quackId })}
               onWriteFirst={() => textareaRef.current?.focus()}
-              replyFormFor={replyFormFor}
-              onReplyOpen={setReplyFormFor}
-              onReplyClose={() => setReplyFormFor(null)}
+              replyFormFor={reply.replyFormFor}
+              replyDraft={reply.replyDraft}
+              onReplyDraftChange={reply.changeDraft}
+              onReplyOpen={reply.openReply}
+              onReplyClose={reply.closeReply}
               defaultMood={defaultMood}
             />
           </TabsContent>

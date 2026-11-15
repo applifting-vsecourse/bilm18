@@ -1,5 +1,4 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
 
 import { HTTPError } from "@/lib/api-client"
 
@@ -18,13 +17,9 @@ export function useAddReply() {
 
   return useMutation({
     mutationFn: addReply,
-    onError: (error) => {
-      // Someone deleted it while this page was open: say so, and show the
-      // thread as it is now. Other errors stay in the form.
-      if (isReplyToDeletedQuack(error)) toast.error(REPLY_TO_DELETED_MESSAGE)
-    },
     onSettled: async () => {
-      // The thread, the feed's reply count and Mine all change.
+      // The thread, the feed's reply count and Mine all change — and when the
+      // quack was deleted meanwhile, the refreshed thread shows it.
       await queryClient.invalidateQueries({ queryKey: quackKeys.all() })
     },
   })

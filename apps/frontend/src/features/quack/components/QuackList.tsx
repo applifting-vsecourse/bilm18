@@ -8,6 +8,7 @@ import { QuackItem } from "@/features/quack/components/QuackItem"
 import { QuackReplyActions } from "@/features/quack/components/QuackReplyActions"
 import { ReplyForm } from "@/features/quack/components/ReplyForm"
 import { ReplyingTo } from "@/features/quack/components/ReplyingTo"
+import type { ReplyDraft } from "@/features/quack/hooks/useReplyDraft"
 import { canDeleteQuack } from "@/features/quack/lib/canDeleteQuack"
 
 type QuackListProps = {
@@ -30,6 +31,8 @@ type QuackListProps = {
   // The quack whose reply form is open, if any. Without onReplyOpen there
   // is no Reply action.
   replyFormFor?: string | null
+  replyDraft?: ReplyDraft
+  onReplyDraftChange?: (draft: ReplyDraft) => void
   onReplyOpen?: (quackId: string) => void
   onReplyClose?: () => void
   // Pre-selected in the reply form, like for a new quack.
@@ -49,6 +52,8 @@ export function QuackList({
   view = "all",
   onWriteFirst,
   replyFormFor = null,
+  replyDraft,
+  onReplyDraftChange,
   onReplyOpen,
   onReplyClose,
   defaultMood,
@@ -135,11 +140,13 @@ export function QuackList({
             quack={quack}
             onReply={onReplyOpen ? () => onReplyOpen(quack.id) : undefined}
           />
-          {replyFormFor === quack.id && quack.user ? (
+          {replyFormFor === quack.id ? (
             <ReplyForm
               quackId={quack.id}
-              authorUsername={quack.user.username}
+              authorUsername={quack.user?.username ?? null}
               defaultMood={defaultMood}
+              draft={replyDraft}
+              onDraftChange={onReplyDraftChange}
               onClose={() => onReplyClose?.()}
               className="mt-2"
             />

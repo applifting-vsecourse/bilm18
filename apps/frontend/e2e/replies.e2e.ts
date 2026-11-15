@@ -104,6 +104,70 @@ test("cannot reply to a deleted quack", async ({ browser }) => {
   }
 })
 
+test("a reply typed while the quack is deleted isn't lost", async ({ browser }) => {
+  const stamp = Date.now()
+  const author = await signedInPage(browser, users.caffeinatedDuck)
+  const quackId = await postQuack(author, `Coffee ${stamp}`)
+  // A reply keeps the deleted quack in the thread as a tombstone.
+  const replyId = await postReply(author, quackId, `First ${stamp}`)
+  const replier = await signedInPage(browser, users.deepDuckThoughts)
+
+  try {
+    await replier.goto(`/quacks/${quackId}`)
+    const parent = replier.locator("article").filter({ hasText: `Coffee ${stamp}` })
+    await parent.getByRole("button", { name: "Reply" }).click()
+    await replier.getByLabel("Reply to @CaffeinatedDuck").fill(`Too late ${stamp}`)
+
+    expect((await author.request.delete(`${API}/quacks/${quackId}`)).status()).toBe(204)
+    await replier.locator("form").getByRole("button", { name: "Reply", exact: true }).click()
+
+    await expect(
+      replier.getByText("That quack was deleted, so you can't reply to it."),
+    ).toBeVisible()
+    // The form and the text are still there; Reply is off.
+    await expect(replier.getByLabel(/^Reply to/)).toHaveValue(`Too late ${stamp}`)
+    await expect(
+      replier.locator("form").getByRole("button", { name: "Reply", exact: true }),
+    ).toBeDisabled()
+    await expect(replier.getByText("This quack was deleted")).toBeVisible()
+  } finally {
+    await author.request.delete(`${API}/quacks/${replyId}`)
+    await author.context().close()
+    await replier.context().close()
+  }
+})
+
+// Nothing else keeps the quack in the thread: it is deleted for good, and the
+// form disappears from the page with it. The text still has to survive.
+for (const where of ["thread", "feed"] as const) {
+  test(`a reply to a quack that is gone completely isn't lost (${where})`, async ({ browser }) => {
+    const stamp = Date.now()
+    const author = await signedInPage(browser, users.caffeinatedDuck)
+    const quackId = await postQuack(author, `Coffee ${stamp}`)
+    const replier = await signedInPage(browser, users.deepDuckThoughts)
+
+    try {
+      await replier.goto(where === "thread" ? `/quacks/${quackId}` : "/quacks")
+      const quack = replier.locator("article").filter({ hasText: `Coffee ${stamp}` })
+      await quack.getByRole("button", { name: "Reply" }).click()
+      await replier.getByLabel("Reply to @CaffeinatedDuck").fill(`Too late ${stamp}`)
+
+      expect((await author.request.delete(`${API}/quacks/${quackId}`)).status()).toBe(204)
+      await replier.locator("form").getByRole("button", { name: "Reply", exact: true }).click()
+
+      await expect(
+        replier.getByText("That quack was deleted, so you can't reply to it."),
+      ).toBeVisible()
+      await expect(replier.getByLabel("Your unsent reply")).toHaveValue(`Too late ${stamp}`)
+      await replier.getByRole("button", { name: "Dismiss" }).click()
+      await expect(replier.getByLabel("Your unsent reply")).toHaveCount(0)
+    } finally {
+      await author.context().close()
+      await replier.context().close()
+    }
+  })
+}
+
 test("nobody can delete someone else's reply", async ({ browser }) => {
   const stamp = Date.now()
   const author = await signedInPage(browser, users.caffeinatedDuck)

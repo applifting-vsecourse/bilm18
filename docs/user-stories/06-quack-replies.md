@@ -27,8 +27,8 @@ Texty v UI jsou anglicky jako zbytek aplikace („Reply“, „This quack was de
 - [ ] Odpovídat jde i na odpovědi, do libovolné hloubky.
 - [ ] Odpověď má **text a volitelnou náladu**, předvyplněnou z profilu jako u nového quacku. Platí stejná pravidla pro text jako u quacku.
 - [ ] Odpověď **nemůže mít anketu**. Server to odmítne, i když request nepřijde přes UI.
-- [ ] Na **smazaný quack odpovědět nejde** a tlačítko Reply u něj není. Kdo měl otevřenou starou stránku a odpověď přesto odešle, dostane chybu a vlákno se znovu načte.
-- [ ] Odpověď se nikdy neztratí kvůli tomu, že někdo ve stejnou chvíli maže quack, na který odpovídá.
+- [ ] Na **smazaný quack odpovědět nejde** a tlačítko Reply u něj není. Kdo měl otevřenou starou stránku a odpověď přesto odešle, server vrátí 404 a vlákno se znovu načte. **Formulář zůstane otevřený i s rozepsaným textem**, ukáže „That quack was deleted, so you can't reply to it.“ a tlačítko Reply se vypne. Text si uživatel může zkopírovat. Totéž platí, když quack zmizí úplně (neměl další odpovědi): ve feedu i ve vlákně se místo formuláře ukáže stejná hláška a rozepsaný text v needitovatelném poli s tlačítkem Dismiss.
+- [ ] Souběžné mazání nikdy nezanechá odpověď bez rodiče: odpověď se buď uloží (a rodič se změní na náhrobek), nebo ji server odmítne s 404. Nic nezůstane napůl.
 
 ### Feed (záložka All)
 

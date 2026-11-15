@@ -19,7 +19,12 @@ import { cn } from "@/lib/utils"
 
 import { quackMoodSchema, type QuackMood } from "@/features/quack/api/quackSchemas"
 import { MoodToggleGroup } from "@/features/quack/components/MoodToggleGroup"
-import { isReplyToDeletedQuack, useAddReply } from "@/features/quack/hooks/useAddReply"
+import {
+  isReplyToDeletedQuack,
+  REPLY_TO_DELETED_MESSAGE,
+  useAddReply,
+} from "@/features/quack/hooks/useAddReply"
+import type { ReplyDraft } from "@/features/quack/hooks/useReplyDraft"
 import { QUACK_MAX_LENGTH } from "@/features/quack/lib/quackText"
 
 // Same rules as a quack, without a poll — replies have none.
@@ -36,12 +41,16 @@ type FormValues = z.infer<typeof schema>
 
 type ReplyFormProps = {
   quackId: string
-  // Who the reply answers, for the label.
-  authorUsername: string
+  // Who the reply answers, for the label. null once that quack was deleted.
+  authorUsername: string | null
   // The user's default mood from Settings, pre-selected like for a new quack.
   defaultMood?: QuackMood
-  // Called after the reply is posted, on Cancel, and when the quack turns out
-  // to be deleted — every way the form is done.
+  // What was typed before this form was (re)mounted, and where to report
+  // changes — the page keeps it in case the quack is deleted under the form.
+  draft?: ReplyDraft
+  onDraftChange?: (draft: ReplyDraft) => void
+  // Called after the reply is posted and on Cancel. Not when the quack turns
+  // out to be deleted: the form stays, so what was typed isn't lost.
   onClose: () => void
   className?: string
 }
@@ -50,6 +59,8 @@ export function ReplyForm({
   quackId,
   authorUsername,
   defaultMood,
+  draft,
+  onDraftChange,
   onClose,
   className,
 }: ReplyFormProps) {
@@ -57,7 +68,7 @@ export function ReplyForm({
   const moodLabelId = useId()
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { text: "", mood: defaultMood },
+    defaultValues: { text: draft?.text ?? "", mood: draft ? draft.mood : defaultMood },
   })
 
   // The form opens because the user pressed Reply — let them type right away.
@@ -67,17 +78,23 @@ export function ReplyForm({
   }, [])
 
   const text = useWatch({ control: form.control, name: "text" })
+  const mood = useWatch({ control: form.control, name: "mood" })
   const length = text?.length ?? 0
+
+  useEffect(() => {
+    onDraftChange?.({ text: text ?? "", mood })
+    // Report typing only; a new callback identity is no reason to report again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [text, mood])
+
+  // The server said 404: nobody can reply to this quack any more.
+  const isQuackDeleted = isReplyToDeletedQuack(addReply.error)
 
   const handleSubmit = (values: FormValues) => {
     addReply.mutate(
       { quackId, text: values.text, mood: values.mood },
       {
         onSuccess: onClose,
-        // The hook already told the user; the refreshed thread shows why.
-        onError: (error) => {
-          if (isReplyToDeletedQuack(error)) onClose()
-        },
       },
     )
   }
@@ -89,9 +106,11 @@ export function ReplyForm({
         onSubmit={form.handleSubmit(handleSubmit)}
         className={cn("space-y-3", className)}
       >
-        {addReply.error && !isReplyToDeletedQuack(addReply.error) ? (
+        {addReply.error ? (
           <Alert variant="destructive">
-            <AlertDescription>{addReply.error.message}</AlertDescription>
+            <AlertDescription>
+              {isQuackDeleted ? REPLY_TO_DELETED_MESSAGE : addReply.error.message}
+            </AlertDescription>
           </Alert>
         ) : null}
 
@@ -100,7 +119,9 @@ export function ReplyForm({
           name="text"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Reply to @{authorUsername}</FormLabel>
+              <FormLabel>
+                {authorUsername ? `Reply to @${authorUsername}` : "Reply to a deleted quack"}
+              </FormLabel>
               <FormControl>
                 <Textarea
                   rows={2}
@@ -158,7 +179,7 @@ export function ReplyForm({
             type="submit"
             variant="secondary"
             size="sm"
-            disabled={addReply.isPending}
+            disabled={addReply.isPending || isQuackDeleted}
           >
             {addReply.isPending ? <Loader2 className="size-4 animate-spin" /> : null}
             Reply

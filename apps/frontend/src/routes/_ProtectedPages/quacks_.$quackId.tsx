@@ -13,7 +13,9 @@ import { useSession } from "@/features/auth/hooks/useSession"
 import { profileQueryOptions } from "@/features/profile/api/profileQueryOptions"
 import { threadQueryOptions } from "@/features/quack/api/threadQueryOptions"
 import { QuackThread, threadQuackElementId } from "@/features/quack/components/QuackThread"
+import { ReplyToDeletedQuack } from "@/features/quack/components/ReplyToDeletedQuack"
 import { useDeleteQuack } from "@/features/quack/hooks/useDeleteQuack"
+import { useReplyDraft } from "@/features/quack/hooks/useReplyDraft"
 import { useVote } from "@/features/quack/hooks/useVote"
 import { buildThreadTree } from "@/features/quack/lib/buildThreadTree"
 
@@ -32,7 +34,7 @@ function ThreadPage() {
   const profileQuery = useQuery(profileQueryOptions())
   const { user } = useSession()
   // Page state only.
-  const [replyFormFor, setReplyFormFor] = useState<string | null>(null)
+  const reply = useReplyDraft()
   // The linked-to quack is highlighted until its highlight has run out.
   const [expiredHighlightId, setExpiredHighlightId] = useState<string | undefined>()
   const vote = useVote()
@@ -58,6 +60,14 @@ function ThreadPage() {
 
   const isNotFound =
     threadQuery.error instanceof HTTPError && threadQuery.error.response.status === 404
+
+  // The quack being replied to is no longer in the thread: it was deleted.
+  const isReplyTargetGone =
+    reply.replyFormFor !== null &&
+    (isNotFound ||
+      (threadQuery.isFetched &&
+        !threadQuery.isFetching &&
+        !threadQuery.data?.some((quack) => quack.id === reply.replyFormFor)))
 
   return (
     <>
@@ -106,7 +116,15 @@ function ThreadPage() {
           </Alert>
         ) : null}
 
-        {tree ? (
+        {isReplyTargetGone ? (
+          <ReplyToDeletedQuack
+            draft={reply.replyDraft}
+            onDismiss={reply.closeReply}
+          />
+        ) : null}
+
+        {/* After a 404 the cached thread is stale — don't show it next to "doesn't exist". */}
+        {tree && !isNotFound ? (
           <QuackThread
             tree={tree}
             highlightedId={highlightedId}
@@ -115,9 +133,11 @@ function ThreadPage() {
             // Only shows the action; the server decides who may delete.
             isAdmin={user?.role === "admin"}
             onDelete={(id) => deleteQuack.mutate({ quackId: id })}
-            replyFormFor={replyFormFor}
-            onReplyOpen={setReplyFormFor}
-            onReplyClose={() => setReplyFormFor(null)}
+            replyFormFor={reply.replyFormFor}
+            replyDraft={reply.replyDraft}
+            onReplyDraftChange={reply.changeDraft}
+            onReplyOpen={reply.openReply}
+            onReplyClose={reply.closeReply}
             defaultMood={profileQuery.data?.defaultMood ?? undefined}
           />
         ) : null}
