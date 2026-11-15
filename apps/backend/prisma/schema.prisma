@@ -31,21 +31,52 @@ enum QuackMood {
   @@map("quack_mood")
 }
 
+// A row is either a live quack or a tombstone: a quack deleted while it had
+// replies (docs/adr/0001). The tombstone keeps its place in the thread and
+// nothing else — no text, author, mood or poll. The migration's CHECK
+// constraint quack_tombstone_check enforces the two shapes.
 model Quack {
   id        String     @id @default(cuid())
-  text      String     @db.Text
+  // NULL only on a tombstone.
+  text      String?    @db.Text
   // Optional: quacks posted without a mood (and every quack from before
-  // moods existed) stay null.
+  // moods existed) stay null. Always null on a tombstone.
   mood      QuackMood?
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
+  // NULL only on a tombstone: a deleted quack keeps no trace of its author.
+  // Cascade stays, but deleting a User is not built yet: whoever builds it
+  // must turn the user's replied-to quacks into tombstones first, or the
+  // parent foreign key below makes the delete fail (docs/adr/0001).
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String?
   createdAt DateTime   @default(now())
   updatedAt DateTime   @default(now()) @updatedAt
+  // When the quack was deleted while it had replies. Null on a live quack.
+  deletedAt DateTime?
+
+  // The quack this one replies to. Null for a top-level quack.
+  // NoAction: the database never deletes a quack that still has replies.
+  // (Not Restrict: Postgres checks NoAction at the end of the statement, so
+  // a cascade removing a parent together with all its replies passes.)
+  parent   Quack?  @relation("QuackReplies", fields: [parentId], references: [id], onDelete: NoAction)
+  parentId String?
+  replies  Quack[] @relation("QuackReplies")
+
+  // The top-level quack of the thread. Null for a top-level quack itself;
+  // CHECK quack_thread_check keeps it set exactly when parentId is.
+  // Derivable from the parent chain, stored so a whole thread loads in one
+  // query. Written once when the reply is created — quacks never move.
+  root          Quack?  @relation("QuackThread", fields: [rootId], references: [id], onDelete: NoAction)
+  rootId        String?
+  threadReplies Quack[] @relation("QuackThread")
+
   // A quack with options is a poll — there is no separate poll table.
+  // Replies never have one (CreateReplyDto has no field for it).
   pollOptions PollOption[]
   pollVotes   PollVote[]
 
   @@index([userId])
+  @@index([parentId])
+  @@index([rootId])
   @@map("quack")
 }
 

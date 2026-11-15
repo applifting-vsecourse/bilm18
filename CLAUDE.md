@@ -9,6 +9,8 @@ The worked example is the quack feed: `Quack` model → seed → repository → 
 
 **Before writing or changing any UI, read [`DESIGN.md`](DESIGN.md).** It is a contract, not a suggestion — it exists to stop generated screens drifting into generic nested cards.
 
+**Before changing the data model or the app's structure, check the index of architecture decisions in [`docs/adr/README.md`](docs/adr/README.md).**
+
 ## Commands
 
 - `pnpm dev` — everything: env files, Postgres (Docker), migrate, seed, both dev servers

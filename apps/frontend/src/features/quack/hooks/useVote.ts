@@ -27,10 +27,11 @@ export function useVote() {
     scope: { id: "quack-vote" },
     onMutate: async ({ quackId, optionId }) => {
       // A refetch landing now would overwrite the optimistic vote.
-      await queryClient.cancelQueries({ queryKey: quackKeys.lists() })
+      await queryClient.cancelQueries({ queryKey: quackKeys.all() })
 
-      const previous = queryClient.getQueryData<Quack[]>(quackKeys.lists())
-      queryClient.setQueryData<Quack[]>(quackKeys.lists(), (quacks) =>
+      // The poll can be in the feed, in Mine and in an open thread at once.
+      const previous = queryClient.getQueriesData<Quack[]>({ queryKey: quackKeys.all() })
+      queryClient.setQueriesData<Quack[]>({ queryKey: quackKeys.all() }, (quacks) =>
         quacks?.map((quack) =>
           quack.id === quackId && quack.poll
             ? { ...quack, poll: applyVote(quack.poll, optionId) }
@@ -41,7 +42,9 @@ export function useVote() {
     },
     onError: (_error, _variables, context) => {
       if (isLastVoteInFlight() && context?.previous) {
-        queryClient.setQueryData(quackKeys.lists(), context.previous)
+        for (const [queryKey, quacks] of context.previous) {
+          queryClient.setQueryData(queryKey, quacks)
+        }
       }
       toast.error(VOTE_FAILED_MESSAGE)
     },

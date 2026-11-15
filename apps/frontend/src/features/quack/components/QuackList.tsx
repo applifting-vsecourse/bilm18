@@ -3,8 +3,12 @@ import { Loader2, RefreshCw } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 
-import type { Quack } from "@/features/quack/api/quackSchemas"
+import type { Quack, QuackMood } from "@/features/quack/api/quackSchemas"
 import { QuackItem } from "@/features/quack/components/QuackItem"
+import { QuackReplyActions } from "@/features/quack/components/QuackReplyActions"
+import { ReplyForm } from "@/features/quack/components/ReplyForm"
+import { ReplyingTo } from "@/features/quack/components/ReplyingTo"
+import type { ReplyDraft } from "@/features/quack/hooks/useReplyDraft"
 import { canDeleteQuack } from "@/features/quack/lib/canDeleteQuack"
 
 type QuackListProps = {
@@ -24,6 +28,15 @@ type QuackListProps = {
   view?: "all" | "mine"
   // Offered when the viewer has no quacks of their own yet.
   onWriteFirst?: () => void
+  // The quack whose reply form is open, if any. Without onReplyOpen there
+  // is no Reply action.
+  replyFormFor?: string | null
+  replyDraft?: ReplyDraft
+  onReplyDraftChange?: (draft: ReplyDraft) => void
+  onReplyOpen?: (quackId: string) => void
+  onReplyClose?: () => void
+  // Pre-selected in the reply form, like for a new quack.
+  defaultMood?: QuackMood
 }
 
 export function QuackList({
@@ -38,6 +51,12 @@ export function QuackList({
   onDelete,
   view = "all",
   onWriteFirst,
+  replyFormFor = null,
+  replyDraft,
+  onReplyDraftChange,
+  onReplyOpen,
+  onReplyClose,
+  defaultMood,
 }: QuackListProps) {
   const trimmedSearchTerm = searchTerm.trim()
 
@@ -107,7 +126,32 @@ export function QuackList({
               : undefined
           }
           isOwn={quack.userId === currentUserId}
-        />
+          replyingTo={
+            // Only Mine lists replies; the line leads to the reply in its thread.
+            quack.parent && quack.rootId ? (
+              <ReplyingTo
+                username={quack.parent.username}
+                thread={{ rootId: quack.rootId, quackId: quack.id }}
+              />
+            ) : undefined
+          }
+        >
+          <QuackReplyActions
+            quack={quack}
+            onReply={onReplyOpen ? () => onReplyOpen(quack.id) : undefined}
+          />
+          {replyFormFor === quack.id ? (
+            <ReplyForm
+              quackId={quack.id}
+              authorUsername={quack.user?.username ?? null}
+              defaultMood={defaultMood}
+              draft={replyDraft}
+              onDraftChange={onReplyDraftChange}
+              onClose={() => onReplyClose?.()}
+              className="mt-2"
+            />
+          ) : null}
+        </QuackItem>
       ))}
     </div>
   )

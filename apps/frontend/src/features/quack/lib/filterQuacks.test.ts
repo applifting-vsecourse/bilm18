@@ -7,12 +7,17 @@ const breadCritic = { id: "u1", name: "The Bread Critic", username: "BreadCritic
 const caffeinatedDuck = { id: "u2", name: "Caffeinated Duck", username: "CaffeinatedDuck" }
 const deepDuckThoughts = { id: "u3", name: "Deep Duck Thoughts", username: "DeepDuckThoughts" }
 
-const quack = (id: string, user: Quack["user"], text: string): Quack => ({
+const quack = (id: string, user: NonNullable<Quack["user"]>, text: string): Quack => ({
   id,
   text,
   mood: null,
   userId: user.id,
   createdAt: new Date("2026-01-01T12:00:00Z"),
+  deletedAt: null,
+  parentId: null,
+  rootId: null,
+  replyCount: 0,
+  parent: null,
   user,
   poll: null,
 })
@@ -76,5 +81,25 @@ describe("filterQuacks", () => {
 
   it("returns nothing when no field matches", () => {
     expect(filterQuacks(feed, "heron")).toEqual([])
+  })
+
+  describe("with a deleted quack in the feed", () => {
+    const deleted: Quack = {
+      ...espresso,
+      id: "q-deleted",
+      text: null,
+      userId: null,
+      user: null,
+      deletedAt: new Date("2026-01-02T12:00:00Z"),
+      replyCount: 2,
+    }
+
+    it("keeps it when there is no search", () => {
+      expect(filterQuacks([deleted, pond], "")).toEqual([deleted, pond])
+    })
+
+    it("drops it from a search — it has nothing to match", () => {
+      expect(filterQuacks([deleted, pond], "pond")).toEqual([pond])
+    })
   })
 })
