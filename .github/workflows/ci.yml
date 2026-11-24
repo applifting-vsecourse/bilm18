@@ -50,3 +50,144 @@ jobs:
 
       - name: Build frontend
         run: pnpm frontend build
+
+  # API against a real database: supertest → Nest app → Postgres.
+  # Locally: `pnpm backend test:int` (quacker_test in the Docker Postgres).
+  test-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: quacker
+          POSTGRES_PASSWORD: quacker
+          POSTGRES_DB: quacker_test
+        # Same port as the local Docker Postgres, so the default
+        # TEST_DATABASE_URL works unchanged.
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U quacker -d quacker_test"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create env files
+        run: pnpm env:check
+
+      - name: Generate Prisma client
+        run: pnpm backend prisma:generate
+
+      # Applies our Prisma migrations to quacker_test, then runs *.int-spec.ts.
+      - name: Integration tests
+        run: pnpm backend test:int
+
+  # The whole app in a browser: CI starts its own database, backend and
+  # frontend, seeds the database, then runs Playwright (apps/frontend/e2e).
+  test-e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: quacker
+          POSTGRES_PASSWORD: quacker
+          POSTGRES_DB: quacker
+        # Matches DATABASE_URL in apps/backend/.env.example.
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U quacker -d quacker"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create env files
+        run: pnpm env:check
+
+      - name: Generate Prisma client
+        run: pnpm backend prisma:generate
+
+      - name: Migrate and seed the database
+        run: |
+          pnpm backend migrate
+          pnpm backend seed
+
+      - name: Install Playwright browser
+        run: pnpm --dir apps/frontend exec playwright install --with-deps chromium
+
+      - name: Start backend (:4050)
+        run: nohup pnpm backend start > backend.log 2>&1 &
+
+      - name: Build and start frontend (:3050)
+        run: |
+          pnpm frontend build
+          nohup pnpm --dir apps/frontend exec vite preview --port 3050 --strictPort > frontend.log 2>&1 &
+
+      - name: Wait for the app
+        run: |
+          for i in $(seq 90); do
+            # Any HTTP answer from the backend (401 signed out) means it's up.
+            if curl -s -o /dev/null http://localhost:4050/api/quacks &&
+               curl -sf -o /dev/null http://localhost:3050; then
+              echo "App is up."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "App did not start in 3 minutes."
+          cat backend.log frontend.log
+          exit 1
+
+      - name: End-to-end tests
+        run: pnpm frontend e2e
+
+      - name: Upload logs and traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: |
+            backend.log
+            frontend.log
+            apps/frontend/test-results/
+          retention-days: 7
+
+  # Turns red when a PR removes or rewrites lines in an existing test file
+  # (only added lines are fine). Tests are the spec: if one had to change,
+  # the PR says why. Independent of the other jobs and NOT a required check,
+  # so it shows on the PR without blocking the merge or the deploy.
+  test-changes:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Check for changed tests
+        run: bash scripts/check-test-changes.sh "origin/${{ github.base_ref }}"
