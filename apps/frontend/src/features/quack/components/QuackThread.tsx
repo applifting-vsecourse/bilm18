@@ -13,6 +13,8 @@ type QuackThreadProps = {
   // Briefly highlighted — the quack a link pointed at.
   highlightedId?: string
   onVote?: (quackId: string, optionId: string) => void
+  // Likes (`liked: true`) or takes back the like of a quack.
+  onToggleLike?: (quackId: string, liked: boolean) => void
   // Same rule as the feed: the author, or an admin.
   currentUserId?: string
   isAdmin?: boolean
@@ -42,6 +44,7 @@ function ThreadBranch({ node, ...props }: QuackThreadProps & { node: ThreadNode 
   const {
     highlightedId,
     onVote,
+    onToggleLike,
     currentUserId,
     isAdmin = false,
     onDelete,
@@ -61,6 +64,7 @@ function ThreadBranch({ node, ...props }: QuackThreadProps & { node: ThreadNode 
         isHighlighted={quack.id === highlightedId}
         quack={quack}
         onVote={onVote ? (optionId) => onVote(quack.id, optionId) : undefined}
+        onToggleLike={onToggleLike ? () => onToggleLike(quack.id, !quack.likedByMe) : undefined}
         onDelete={
           onDelete && canDeleteQuack(quack, currentUserId, isAdmin)
             ? () => onDelete(quack.id)
@@ -84,7 +88,7 @@ function ThreadBranch({ node, ...props }: QuackThreadProps & { node: ThreadNode 
             draft={replyDraft}
             onDraftChange={onReplyDraftChange}
             onClose={() => onReplyClose?.()}
-            className="mt-2"
+            className="mt-2 basis-full"
           />
         ) : null}
       </QuackItem>

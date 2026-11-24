@@ -59,6 +59,10 @@ export type Quack = {
   replyCount?: number;
   // null for a top-level quack; undefined when not loaded.
   parent?: QuackParent | null;
+  // How many people like it — 0 on a tombstone. undefined when not loaded.
+  likeCount?: number;
+  // Whether the viewer likes it. undefined when not loaded.
+  likedByMe?: boolean;
 };
 
 // A quack's likes as the viewer sees them (docs/adr/0002): how many people

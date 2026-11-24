@@ -19,6 +19,8 @@ type QuackListProps = {
   // The active search, if any — `quacks` is expected to be filtered already.
   searchTerm?: string
   onVote?: (quackId: string, optionId: string) => void
+  // Likes (`liked: true`) or takes back the like of a quack.
+  onToggleLike?: (quackId: string, liked: boolean) => void
   // Quacks by this user get a delete action; everyone else's don't…
   currentUserId?: string
   // …unless the viewer is an admin: then every quack gets one.
@@ -46,6 +48,7 @@ export function QuackList({
   onReload,
   searchTerm = "",
   onVote,
+  onToggleLike,
   currentUserId,
   isAdmin = false,
   onDelete,
@@ -120,6 +123,7 @@ export function QuackList({
           key={quack.id}
           quack={quack}
           onVote={onVote ? (optionId) => onVote(quack.id, optionId) : undefined}
+          onToggleLike={onToggleLike ? () => onToggleLike(quack.id, !quack.likedByMe) : undefined}
           onDelete={
             onDelete && canDeleteQuack(quack, currentUserId, isAdmin)
               ? () => onDelete(quack.id)
@@ -148,7 +152,7 @@ export function QuackList({
               draft={replyDraft}
               onDraftChange={onReplyDraftChange}
               onClose={() => onReplyClose?.()}
-              className="mt-2"
+              className="mt-2 basis-full"
             />
           ) : null}
         </QuackItem>

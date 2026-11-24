@@ -6,7 +6,8 @@ export type LikeState = {
 
 // What a like or unlike click shows straight away, before the server answers:
 // liked becomes unliked and the other way round. The count never drops below 0.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- stub until likes are implemented
 export function toggleLike(state: LikeState): LikeState {
-  throw new Error("not implemented")
+  return state.likedByMe
+    ? { likeCount: Math.max(0, state.likeCount - 1), likedByMe: false }
+    : { likeCount: state.likeCount + 1, likedByMe: true }
 }

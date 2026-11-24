@@ -23,12 +23,16 @@ type QuackInclude = {
       user: { select: { username: true } };
     };
   };
-  _count: { select: { threadReplies: { where: { deletedAt: null } } } };
+  likes: { where: { userId: string }; select: { userId: true } };
+  _count: {
+    select: { threadReplies: { where: { deletedAt: null } }; likes: true };
+  };
 };
 
 // Loads what a list shows for a quack, as seen by `viewerId`: the author,
 // the poll options with their vote counts, only the viewer's own vote, who
-// a reply answers, and how many live replies a thread has.
+// a reply answers, how many live replies a thread has, and how many likes
+// the quack has and whether one is the viewer's.
 const quackInclude = (viewerId: string): QuackInclude => ({
   user: true,
   pollOptions: {
@@ -42,7 +46,10 @@ const quackInclude = (viewerId: string): QuackInclude => ({
   parent: {
     select: { id: true, deletedAt: true, user: { select: { username: true } } },
   },
-  _count: { select: { threadReplies: { where: { deletedAt: null } } } },
+  likes: { where: { userId: viewerId }, select: { userId: true } },
+  _count: {
+    select: { threadReplies: { where: { deletedAt: null } }, likes: true },
+  },
 });
 
 type PrismaQuack = Prisma.QuackGetPayload<{ include: QuackInclude }>;
@@ -103,7 +110,29 @@ const mapPrismaQuackToDomain = (quack: PrismaQuack): Quack => ({
           : (quack.parent.user?.username ?? ''),
       }
     : null,
+  likeCount: quack._count.likes,
+  // At most one row: the primary key allows one like per person per quack.
+  likedByMe: quack.likes.length > 0,
 });
+
+// A quack's likes as `viewerId` sees them — the same two numbers
+// quackInclude reads for a list. null when the quack is gone.
+const readLikes = async (
+  tx: Transaction,
+  quackId: string,
+  viewerId: string,
+): Promise<QuackLikes | null> => {
+  const quack = await tx.quack.findUnique({
+    where: { id: quackId },
+    select: {
+      likes: { where: { userId: viewerId }, select: { userId: true } },
+      _count: { select: { likes: true } },
+    },
+  });
+  return quack
+    ? { likeCount: quack._count.likes, likedByMe: quack.likes.length > 0 }
+    : null;
+};
 
 // Rows read with FOR UPDATE — Prisma's query API can't take a row lock.
 type LockedQuack = {
@@ -129,6 +158,22 @@ const lockQuack = async (
     WHERE "id" = ${quackId}
     FOR UPDATE`;
   return rows[0];
+};
+
+// Holds a shared lock on the quack's row until the transaction ends and says
+// whether it is live. Likes don't block each other, but deleteQuack's
+// FOR UPDATE waits for them (and they for it), so a like can't land on a
+// quack that is turning into a tombstone or going away.
+const lockLiveQuackForLike = async (
+  tx: Transaction,
+  quackId: string,
+): Promise<boolean> => {
+  const rows = await tx.$queryRaw<{ deletedAt: Date | null }[]>`
+    SELECT "deletedAt"
+    FROM "quack"
+    WHERE "id" = ${quackId}
+    FOR SHARE`;
+  return rows.length > 0 && rows[0].deletedAt === null;
 };
 
 /**
@@ -264,6 +309,8 @@ export class QuackRepository {
       if (replies > 0) {
         // Votes go with the options (onDelete: Cascade).
         await tx.pollOption.deleteMany({ where: { quackId: locked.id } });
+        // Likes go with the content (docs/adr/0002); the replies keep theirs.
+        await tx.quackLike.deleteMany({ where: { quackId: locked.id } });
         await tx.quack.update({
           where: { id: locked.id },
           data: { text: null, mood: null, userId: null, deletedAt: new Date() },
@@ -314,24 +361,40 @@ export class QuackRepository {
   // Liking again changes nothing (docs/adr/0002: the (quackId, userId) key,
   // not a read-then-write, keeps it to one per person). Null when the quack
   // doesn't exist or is a tombstone — nobody can like a deleted quack.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- stub until likes are implemented
   async saveLike(like: {
     quackId: string;
     userId: string;
   }): Promise<QuackLikes | null> {
-    throw new Error('not implemented');
+    return this.prisma.$transaction(async (tx) => {
+      if (!(await lockLiveQuackForLike(tx, like.quackId))) return null;
+
+      // INSERT … ON CONFLICT DO NOTHING: a second or concurrent like by the
+      // same person hits the primary key and changes nothing.
+      await tx.quackLike.createMany({
+        data: [{ quackId: like.quackId, userId: like.userId }],
+        skipDuplicates: true,
+      });
+      return readLikes(tx, like.quackId, like.userId);
+    });
   }
 
   // Takes back `userId`'s like — only theirs, never anyone else's — and
   // returns the quack's likes as they now see them. Taking back a like that
   // isn't there changes nothing. Null when the quack doesn't exist or is a
   // tombstone.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- stub until likes are implemented
   async removeLike(like: {
     quackId: string;
     userId: string;
   }): Promise<QuackLikes | null> {
-    throw new Error('not implemented');
+    return this.prisma.$transaction(async (tx) => {
+      if (!(await lockLiveQuackForLike(tx, like.quackId))) return null;
+
+      // Keyed on the user too: only their like goes, whoever they are.
+      await tx.quackLike.deleteMany({
+        where: { quackId: like.quackId, userId: like.userId },
+      });
+      return readLikes(tx, like.quackId, like.userId);
+    });
   }
 }
 

@@ -16,6 +16,7 @@ import { QuackThread, threadQuackElementId } from "@/features/quack/components/Q
 import { ReplyToDeletedQuack } from "@/features/quack/components/ReplyToDeletedQuack"
 import { useDeleteQuack } from "@/features/quack/hooks/useDeleteQuack"
 import { useReplyDraft } from "@/features/quack/hooks/useReplyDraft"
+import { useToggleLike } from "@/features/quack/hooks/useToggleLike"
 import { useVote } from "@/features/quack/hooks/useVote"
 import { buildThreadTree } from "@/features/quack/lib/buildThreadTree"
 
@@ -38,6 +39,7 @@ function ThreadPage() {
   // The linked-to quack is highlighted until its highlight has run out.
   const [expiredHighlightId, setExpiredHighlightId] = useState<string | undefined>()
   const vote = useVote()
+  const toggleLike = useToggleLike()
   const deleteQuack = useDeleteQuack()
 
   const tree = useMemo(
@@ -129,6 +131,7 @@ function ThreadPage() {
             tree={tree}
             highlightedId={highlightedId}
             onVote={(id, optionId) => vote.mutate({ quackId: id, optionId })}
+            onToggleLike={(id, isLiked) => toggleLike.mutate({ quackId: id, liked: isLiked })}
             currentUserId={user?.id}
             // Only shows the action; the server decides who may delete.
             isAdmin={user?.role === "admin"}

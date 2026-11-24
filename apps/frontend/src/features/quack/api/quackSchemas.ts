@@ -59,13 +59,29 @@ export const quackSchema = z.object({
   parent: quackParentSchema.nullable(),
 })
 
-export const quacksSchema = z.array(quackSchema)
+// A quack's likes as the signed-in user sees them (docs/adr/0002). Sent with
+// every quack in a list or thread, and on its own after a like or unlike.
+export const quackLikesSchema = z.object({
+  likeCount: z.number().int().nonnegative(),
+  likedByMe: z.boolean(),
+})
+
+// Lists and threads always carry the likes; `Quack` alone doesn't require
+// them, so a quack shown without likes (the landing page) still fits.
+export const quackWithLikesSchema = quackSchema.extend(quackLikesSchema.shape)
+
+export const quacksSchema = z.array(quackWithLikesSchema)
 
 // Which quacks a list shows: the feed (top-level quacks only), or everything
 // the signed-in user wrote, replies included.
 export type QuackScope = "all" | "mine"
 
-export type Quack = z.infer<typeof quackSchema>
+export type Quack = z.infer<typeof quackSchema> & {
+  // Present on everything loaded from a list or thread (quacksSchema).
+  likeCount?: number
+  likedByMe?: boolean
+}
+export type QuackWithLikes = z.infer<typeof quackWithLikesSchema>
 export type QuackParent = z.infer<typeof quackParentSchema>
 export type QuackMood = z.infer<typeof quackMoodSchema>
 export type QuackPoll = z.infer<typeof quackPollSchema>

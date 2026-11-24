@@ -138,15 +138,25 @@ export class QuackResponseDto {
   })
   parent!: QuackParentDto | null;
 
+  @ApiProperty({
+    description: 'How many people like this quack; 0 on a tombstone',
+  })
+  likeCount!: number;
+
+  @ApiProperty({ description: 'Whether the signed-in user likes it' })
+  likedByMe!: boolean;
+
   static fromDomain(quack: Quack): QuackResponseDto {
     if (
       quack.user === undefined ||
       quack.poll === undefined ||
       quack.replyCount === undefined ||
-      quack.parent === undefined
+      quack.parent === undefined ||
+      quack.likeCount === undefined ||
+      quack.likedByMe === undefined
     ) {
       throw new Error(
-        `QuackResponseDto.fromDomain expected user, poll, replyCount and parent to be loaded for quack ${quack.id}`,
+        `QuackResponseDto.fromDomain expected user, poll, replyCount, parent and likes to be loaded for quack ${quack.id}`,
       );
     }
     return {
@@ -170,6 +180,8 @@ export class QuackResponseDto {
       parent: quack.parent
         ? { id: quack.parent.id, username: quack.parent.username }
         : null,
+      likeCount: quack.likeCount,
+      likedByMe: quack.likedByMe,
     };
   }
 }

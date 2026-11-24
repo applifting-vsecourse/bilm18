@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 
 import type { Quack } from "@/features/quack/api/quackSchemas"
 import { DeleteQuackButton } from "@/features/quack/components/DeleteQuackButton"
+import { LikeButton } from "@/features/quack/components/LikeButton"
 import { QuackPoll } from "@/features/quack/components/QuackPoll"
 import { UsersName } from "@/features/quack/components/UsersName"
 import { UsersUserName } from "@/features/quack/components/UsersUserName"
@@ -33,6 +34,7 @@ type QuackItemProps = {
 export function QuackItem({
   quack,
   onVote,
+  onToggleLike,
   onDelete,
   isOwn = true,
   replyingTo,
@@ -48,6 +50,11 @@ export function QuackItem({
   // Deleted while it had replies: it keeps its place in the thread and
   // nothing else — no author, time, mood or actions.
   const live = quack.user && quack.text !== null ? { user: quack.user, text: quack.text } : null
+  // Only a live quack loaded with its likes, and only where liking is wired up.
+  const likes =
+    live && onToggleLike && quack.likeCount !== undefined && quack.likedByMe !== undefined
+      ? { likeCount: quack.likeCount, likedByMe: quack.likedByMe }
+      : null
 
   // One tree for both, with `children` always in the same place: when a quack
   // is deleted while its reply form is open, the form keeps what was typed.
@@ -103,7 +110,19 @@ export function QuackItem({
         ) : (
           <p className="text-sm text-muted-foreground">This quack was deleted</p>
         )}
-        {children}
+        {/* The like sits in one row with the reply actions; a reply form wraps below. */}
+        <div className="flex flex-wrap items-start gap-x-2">
+          {likes && onToggleLike ? (
+            <div className="mt-1">
+              <LikeButton
+                likeCount={likes.likeCount}
+                likedByMe={likes.likedByMe}
+                onToggle={onToggleLike}
+              />
+            </div>
+          ) : null}
+          {children}
+        </div>
       </div>
     </article>
   )

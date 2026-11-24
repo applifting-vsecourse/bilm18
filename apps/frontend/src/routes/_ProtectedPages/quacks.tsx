@@ -14,6 +14,7 @@ import { QuackSearch } from "@/features/quack/components/QuackSearch"
 import { ReplyToDeletedQuack } from "@/features/quack/components/ReplyToDeletedQuack"
 import { useDeleteQuack } from "@/features/quack/hooks/useDeleteQuack"
 import { useReplyDraft } from "@/features/quack/hooks/useReplyDraft"
+import { useToggleLike } from "@/features/quack/hooks/useToggleLike"
 import { useVote } from "@/features/quack/hooks/useVote"
 import { filterQuacks } from "@/features/quack/lib/filterQuacks"
 
@@ -39,6 +40,7 @@ function QuacksPage() {
   const { user } = useSession()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const vote = useVote()
+  const toggleLike = useToggleLike()
   const deleteQuack = useDeleteQuack()
 
   const quacks = quacksQuery.data ?? []
@@ -99,6 +101,7 @@ function QuacksPage() {
               // and refocusing the tab refetches it.
               onReload={() => void quacksQuery.refetch()}
               onVote={(quackId, optionId) => vote.mutate({ quackId, optionId })}
+              onToggleLike={(quackId, isLiked) => toggleLike.mutate({ quackId, liked: isLiked })}
               currentUserId={user?.id}
               // Only shows the action; the server decides who may delete.
               isAdmin={user?.role === "admin"}
