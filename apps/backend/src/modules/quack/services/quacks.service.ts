@@ -1,6 +1,7 @@
 import { UserRole } from '@/generated/prisma/client';
 import {
   Quack,
+  QuackLikes,
   QuackMood,
   QuackPoll,
   QuackScope,
@@ -90,6 +91,21 @@ export class QuacksService {
     });
     // Deleted in between, e.g. from another tab.
     if (!deleted) throw new NotFoundException(QUACK_NOT_FOUND_MESSAGE);
+  }
+
+  // Likes the quack as the signed-in user — their own quack too; an admin
+  // likes like anyone else. A deleted quack answers 404, like one that never
+  // existed (docs/adr/0002).
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- stub until likes are implemented
+  async likeQuack(user: Identity, quackId: string): Promise<QuackLikes> {
+    throw new Error('not implemented');
+  }
+
+  // Takes back the signed-in user's own like, never anyone else's — not even
+  // for an admin. A deleted quack answers 404.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- stub until likes are implemented
+  async unlikeQuack(user: Identity, quackId: string): Promise<QuackLikes> {
+    throw new Error('not implemented');
   }
 
   // Casts or moves the user's vote and returns the poll as they now see it.

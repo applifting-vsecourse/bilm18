@@ -1,6 +1,7 @@
 import { AppModule } from '@/app.module';
 import { configureApp } from '@/app.setup';
 import { PrismaService } from '@/core/prisma/prisma.service';
+import { UserRole } from '@/generated/prisma/client';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
@@ -40,6 +41,17 @@ export const users = {
     password: 'password2',
     name: 'Deep Duck Thoughts',
   },
+  breadCritic: {
+    email: 'breadcritic@example.com',
+    password: 'password3',
+    name: 'The Bread Critic',
+  },
+  // Role admin — see signedInAdmin.
+  superadmin: {
+    email: 'admin@example.com',
+    password: 'adminpassword',
+    name: 'Admin (Delete in Prod)',
+  },
 };
 
 /**
@@ -52,5 +64,21 @@ export async function signedInAgent(
 ): Promise<ReturnType<typeof request.agent>> {
   const agent = request.agent(app.getHttpServer());
   await agent.post('/api/auth/sign-up/email').send(user).expect(200);
+  return agent;
+}
+
+/**
+ * Like signedInAgent, then makes the user an admin — the role is set in the
+ * database, as the seed does; nobody can sign up as an admin.
+ */
+export async function signedInAdmin(
+  app: INestApplication,
+  user: { email: string; password: string; name: string },
+): Promise<ReturnType<typeof request.agent>> {
+  const agent = await signedInAgent(app, user);
+  await app.get(PrismaService).user.update({
+    where: { email: user.email },
+    data: { role: UserRole.admin },
+  });
   return agent;
 }
