@@ -74,6 +74,9 @@ model Quack {
   pollOptions PollOption[]
   pollVotes   PollVote[]
 
+  // Who liked it (docs/adr/0002). The count is read from here, never stored.
+  likes QuackLike[]
+
   @@index([userId])
   @@index([parentId])
   @@index([rootId])
@@ -110,6 +113,23 @@ model PollVote {
   @@unique([quackId, userId])
   @@index([optionId])
   @@map("poll_vote")
+}
+
+// A like (docs/adr/0002): who liked which quack. One per person per quack,
+// enforced by the primary key, so concurrent likes can't add a second one.
+// The count is read from this table, never stored on the quack. A tombstone
+// loses its likes (QuackRepository.deleteQuack); a deleted quack or user
+// takes theirs along (Cascade).
+model QuackLike {
+  quack     Quack    @relation(fields: [quackId], references: [id], onDelete: Cascade)
+  quackId   String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  createdAt DateTime @default(now())
+
+  @@id([quackId, userId])
+  @@index([userId])
+  @@map("quack_like")
 }
 
 model Session {
@@ -172,6 +192,7 @@ model User {
   accounts        Account[]
   quacks          Quack[]
   pollVotes       PollVote[]
+  quackLikes      QuackLike[]
   role           UserRole  @default(user)
 
   username        String? @db.VarChar(50)

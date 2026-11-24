@@ -14,6 +14,9 @@ import { quackMoodLabels } from "@/features/quack/lib/moods"
 type QuackItemProps = {
   quack: Quack
   onVote?: (optionId: string) => void
+  // Likes or takes back the like (LikeButton). A tombstone has neither the
+  // button nor the count.
+  onToggleLike?: () => void
   // Pass only when the viewer may delete this quack — without it there is no delete action.
   onDelete?: () => void
   // False when an admin deletes someone else's quack: the confirmation then names the author.

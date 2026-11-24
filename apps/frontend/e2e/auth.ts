@@ -7,6 +7,7 @@ export const users = {
   admin: { email: "admin@example.com", password: "adminpassword" },
   caffeinatedDuck: { email: "caffeinatedduck@example.com", password: "password1" },
   deepDuckThoughts: { email: "deepduckthoughts@example.com", password: "password2" },
+  breadCritic: { email: "breadcritic@example.com", password: "password3" },
 }
 
 // A fresh page with its own cookies: /login sends a signed-in user straight

@@ -2,6 +2,7 @@ import { PrismaService } from '@/core/prisma/prisma.service';
 import { Prisma } from '@/generated/prisma/client';
 import {
   Quack,
+  QuackLikes,
   QuackMood,
   QuackPoll,
   QuackScope,
@@ -307,6 +308,30 @@ export class QuackRepository {
       }
       throw error;
     }
+  }
+
+  // Likes the quack as `userId` and returns its likes as they now see them.
+  // Liking again changes nothing (docs/adr/0002: the (quackId, userId) key,
+  // not a read-then-write, keeps it to one per person). Null when the quack
+  // doesn't exist or is a tombstone — nobody can like a deleted quack.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- stub until likes are implemented
+  async saveLike(like: {
+    quackId: string;
+    userId: string;
+  }): Promise<QuackLikes | null> {
+    throw new Error('not implemented');
+  }
+
+  // Takes back `userId`'s like — only theirs, never anyone else's — and
+  // returns the quack's likes as they now see them. Taking back a like that
+  // isn't there changes nothing. Null when the quack doesn't exist or is a
+  // tombstone.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- stub until likes are implemented
+  async removeLike(like: {
+    quackId: string;
+    userId: string;
+  }): Promise<QuackLikes | null> {
+    throw new Error('not implemented');
   }
 }
 

@@ -61,6 +61,13 @@ export type Quack = {
   parent?: QuackParent | null;
 };
 
+// A quack's likes as the viewer sees them (docs/adr/0002): how many people
+// like it, and whether the viewer is one of them.
+export type QuackLikes = {
+  likeCount: number;
+  likedByMe: boolean;
+};
+
 export const isTombstone = (quack: Pick<Quack, 'deletedAt'>): boolean =>
   quack.deletedAt !== null;
 

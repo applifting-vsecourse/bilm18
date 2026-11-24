@@ -26,6 +26,7 @@ import {
 import { CreateQuackDto } from './dto/create-quack.dto';
 import { CreateReplyDto } from './dto/create-reply.dto';
 import { ListQuacksQuery } from './dto/list-quacks.query';
+import { QuackLikesDto } from './dto/quack-likes.response.dto';
 import { QuackPollDto, QuackResponseDto } from './dto/quack.response.dto';
 import { VoteDto } from './dto/vote.dto';
 
@@ -153,5 +154,35 @@ export class QuacksController {
   ): Promise<QuackPollDto> {
     const poll = await this.quacksService.vote(user, quackId, body.optionId);
     return QuackPollDto.fromDomain(poll);
+  }
+
+  @Put(':quackId/like')
+  @ApiOperation({
+    summary: 'Like a quack — once per person; liking again changes nothing',
+  })
+  @ApiResponse({ status: 200, type: QuackLikesDto })
+  @ApiResponse({ status: 401, description: 'Not signed in' })
+  @ApiResponse({ status: 404, description: 'Quack not found, or deleted' })
+  async like(
+    @User() user: Identity,
+    @Param('quackId') quackId: string,
+  ): Promise<QuackLikesDto> {
+    const likes = await this.quacksService.likeQuack(user, quackId);
+    return QuackLikesDto.fromDomain(likes);
+  }
+
+  @Delete(':quackId/like')
+  @ApiOperation({
+    summary: 'Take back your like — only yours; without one nothing changes',
+  })
+  @ApiResponse({ status: 200, type: QuackLikesDto })
+  @ApiResponse({ status: 401, description: 'Not signed in' })
+  @ApiResponse({ status: 404, description: 'Quack not found, or deleted' })
+  async unlike(
+    @User() user: Identity,
+    @Param('quackId') quackId: string,
+  ): Promise<QuackLikesDto> {
+    const likes = await this.quacksService.unlikeQuack(user, quackId);
+    return QuackLikesDto.fromDomain(likes);
   }
 }
