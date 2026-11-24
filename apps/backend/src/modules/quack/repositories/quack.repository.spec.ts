@@ -28,7 +28,8 @@ const aRow = (
   pollOptions: [],
   pollVotes: [],
   parent: null,
-  _count: { threadReplies: 0 },
+  likes: [],
+  _count: { threadReplies: 0, likes: 0 },
   ...overrides,
 });
 
@@ -240,7 +241,7 @@ describe('QuackRepository.getQuacks scope', () => {
 
   it('counts only live replies in the thread', async () => {
     const { prisma, repository } = setup([
-      aRow({ _count: { threadReplies: 3 } }),
+      aRow({ _count: { threadReplies: 3, likes: 0 } }),
     ]);
 
     const [quack] = await repository.getQuacks('u1');
@@ -250,7 +251,10 @@ describe('QuackRepository.getQuacks scope', () => {
       expect.objectContaining({
         include: expect.objectContaining({
           _count: {
-            select: { threadReplies: { where: { deletedAt: null } } },
+            select: {
+              threadReplies: { where: { deletedAt: null } },
+              likes: true,
+            },
           },
         }) as unknown,
       }),

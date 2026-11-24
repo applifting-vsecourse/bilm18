@@ -96,16 +96,26 @@ export class QuacksService {
   // Likes the quack as the signed-in user — their own quack too; an admin
   // likes like anyone else. A deleted quack answers 404, like one that never
   // existed (docs/adr/0002).
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- stub until likes are implemented
   async likeQuack(user: Identity, quackId: string): Promise<QuackLikes> {
-    throw new Error('not implemented');
+    const likes = await this.quackRepository.saveLike({
+      quackId,
+      // the one who likes is taken from the session, never from the request
+      userId: user.id,
+    });
+    if (!likes) throw new NotFoundException(QUACK_NOT_FOUND_MESSAGE);
+    return likes;
   }
 
   // Takes back the signed-in user's own like, never anyone else's — not even
   // for an admin. A deleted quack answers 404.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- stub until likes are implemented
   async unlikeQuack(user: Identity, quackId: string): Promise<QuackLikes> {
-    throw new Error('not implemented');
+    const likes = await this.quackRepository.removeLike({
+      quackId,
+      // only ever the session user's like — the role changes nothing
+      userId: user.id,
+    });
+    if (!likes) throw new NotFoundException(QUACK_NOT_FOUND_MESSAGE);
+    return likes;
   }
 
   // Casts or moves the user's vote and returns the poll as they now see it.
